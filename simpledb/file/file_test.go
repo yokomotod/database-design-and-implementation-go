@@ -1,7 +1,7 @@
 package file_test
 
 import (
-	"fmt"
+	"path"
 	"testing"
 
 	"simpledb/file"
@@ -9,20 +9,41 @@ import (
 )
 
 func TestFile(t *testing.T) {
-	db := server.NewSimpleDB("filetest", 400)
+	t.Parallel()
+
+	db, err := server.NewSimpleDB( /*dbDir:*/ path.Join(t.TempDir(), "filetest") /*blockSize*/, 400)
+	if err != nil {
+		t.Fatalf("NewSimpleDB: %v", err)
+	}
+
 	fm := db.FileManager()
 
-	blk := file.NewBlockID("testfile", 2)
 	p1 := file.NewPage(fm.BlockSize())
 	pos1 := 88
-	p1.SetString(pos1, "abcdefghijklm")
-	size := file.MaxLength(len("abcdefghijklm"))
+	strVal := "abcdefghijklm"
+	p1.SetString(pos1, strVal)
+
+	size := file.MaxLength(len(strVal))
 	pos2 := pos1 + size
-	p1.SetInt(pos2, 345)
-	fm.Write(blk, p1)
+	intVar := int32(345)
+	p1.SetInt(pos2, intVar)
+
+	blk := file.NewBlockID("testfile", 2)
+	err = fm.Write(blk, p1)
+	if err != nil {
+		t.Fatalf("fm.Write: %v", err)
+	}
 
 	p2 := file.NewPage(fm.BlockSize())
-	fm.Read(blk, p2)
-	fmt.Printf("offset %d contains %d\n", pos2, p2.GetInt(pos2))
-	fmt.Printf("offset %d contains %q\n", pos1, p2.GetString(pos1))
+	err = fm.Read(blk, p2)
+	if err != nil {
+		t.Fatalf("fm.Read: %v", err)
+	}
+
+	if p2.GetInt(pos2) != intVar {
+		t.Errorf("expected %d, got %d", intVar, p2.GetInt(pos2))
+	}
+	if p2.GetString(pos1) != strVal {
+		t.Errorf("expected %q, got %q", strVal, p2.GetString(pos1))
+	}
 }
