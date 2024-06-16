@@ -26,8 +26,8 @@ type Page struct {
 }
 
 const (
-	intSize   = 4
-	utf16Size = 2
+	int32Bytes = 4
+	utf16Size  = 2
 )
 
 func NewPage(blockSize int64) *Page {
@@ -37,7 +37,7 @@ func NewPage(blockSize int64) *Page {
 }
 
 func (p *Page) GetInt(offset int) int32 {
-	return int32(binary.LittleEndian.Uint32(p.buffer[offset : offset+intSize]))
+	return int32(binary.LittleEndian.Uint32(p.buffer[offset : offset+int32Bytes]))
 }
 
 func (p *Page) SetInt(offset int, val int32) {
@@ -46,12 +46,12 @@ func (p *Page) SetInt(offset int, val int32) {
 
 func (p *Page) GetBytes(offset int) []byte {
 	length := p.GetInt(offset)
-	return p.buffer[offset+intSize : offset+intSize+int(length)]
+	return p.buffer[offset+int32Bytes : offset+int32Bytes+int(length)]
 }
 
 func (p *Page) SetBytes(offset int, val []byte) {
 	p.SetInt(offset, int32(len(val)))
-	copy(p.buffer[offset+intSize:], val)
+	copy(p.buffer[offset+int32Bytes:], val)
 }
 
 func (p *Page) GetString(offset int) string {
@@ -59,7 +59,7 @@ func (p *Page) GetString(offset int) string {
 
 	runes := make([]uint16, length)
 	for i := range length {
-		runes[i] = p.getUint16(offset + intSize + i*utf16Size)
+		runes[i] = p.getUint16(offset + int32Bytes + i*utf16Size)
 	}
 
 	return string(utf16.Decode(runes))
@@ -71,7 +71,7 @@ func (p *Page) SetString(offset int, val string) {
 	p.SetInt(offset, int32(len(runes)*utf16Size))
 
 	for i, r := range runes {
-		p.setUint16(offset+intSize+i*utf16Size, r)
+		p.setUint16(offset+int32Bytes+i*utf16Size, r)
 	}
 }
 
@@ -84,7 +84,7 @@ func (p *Page) setUint16(offset int, val uint16) {
 }
 
 func MaxLength(length int) int {
-	return intSize + length*utf16Size
+	return int32Bytes + length*utf16Size
 }
 
 type Manager struct {
