@@ -37,7 +37,6 @@ func (it *LogIterator) moveToBlock(blk *file.BlockID) {
 }
 
 func (it *LogIterator) HasNext() bool {
-	fmt.Printf("  HasNext(): %v (currentPos: %d, fileManager.BlockSize(): %d, blk.Number(): %d)\n", it.currentPos < it.fileManager.BlockSize() || it.blk.Number() > 0, it.currentPos, it.fileManager.BlockSize(), it.blk.Number())
 	return it.currentPos < it.fileManager.BlockSize() || it.blk.Number() > 0
 }
 
@@ -99,7 +98,6 @@ func (lm *Manager) appendNewBlock() (*file.BlockID, error) {
 		return nil, fmt.Errorf("fileManager.Append: %w", err)
 	}
 
-	fmt.Printf("appendNewBlock: block%d\n", blk.Number())
 	lm.logPage.SetInt(0, int32(lm.fileManager.BlockSize()))
 	lm.fileManager.Write(blk, lm.logPage)
 
@@ -130,7 +128,6 @@ func (lm *Manager) Append(logRecord []byte) (int, error) {
 	bytesNeeded := recordSize + file.Int32Bytes
 
 	if boundary-bytesNeeded < file.Int32Bytes { // It doesn't fit
-		fmt.Printf("boundary: %d, bytesNeeded: %d. It doesn't fit, so move to the next block.\n", boundary, bytesNeeded)
 		lm.flush() // so move to the next block.
 		currentBlk, err := lm.appendNewBlock()
 		if err != nil {
