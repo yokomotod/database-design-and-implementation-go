@@ -11,7 +11,9 @@ import (
 )
 
 func TestLog(t *testing.T) {
-	db, err := server.NewSimpleDB(path.Join(t.TempDir(), "filetest"), 400)
+	t.Parallel()
+
+	db, err := server.NewSimpleDB(path.Join(t.TempDir(), "filetest"), 400, 8)
 	if err != nil {
 		t.Fatalf("NewSimpleDB: %v", err)
 	}

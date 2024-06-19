@@ -11,7 +11,7 @@ import (
 func TestFile(t *testing.T) {
 	t.Parallel()
 
-	db, err := server.NewSimpleDB( /*dbDir:*/ path.Join(t.TempDir(), "filetest") /*blockSize*/, 400)
+	db, err := server.NewSimpleDB( /*dbDir:*/ path.Join(t.TempDir(), "filetest") /*blockSize*/, 400, 8)
 	if err != nil {
 		t.Fatalf("NewSimpleDB: %v", err)
 	}
