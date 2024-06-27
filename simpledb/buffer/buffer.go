@@ -2,6 +2,7 @@ package buffer
 
 import (
 	"errors"
+
 	"simpledb/file"
 )
 
@@ -10,7 +11,7 @@ type Buffer struct {
 	contents    *file.Page
 	block       *file.BlockID
 	pins        int
-	txNum       int
+	txNum       int32
 	lsn         int
 }
 
@@ -30,7 +31,7 @@ func (b *Buffer) Block() *file.BlockID {
 	return b.block
 }
 
-func (b *Buffer) SetModified(txNum, lsn int) {
+func (b *Buffer) SetModified(txNum int32, lsn int) {
 	b.txNum = txNum
 	if lsn > 0 {
 		b.lsn = lsn
@@ -79,6 +80,14 @@ func NewManager(fm *file.Manager, buffSize int) *Manager {
 	return &Manager{
 		bufferPool:   bufferPool,
 		numAvailable: buffSize,
+	}
+}
+
+func (bm *Manager) FlushAll(txNum int32) {
+	for _, buf := range bm.bufferPool {
+		if buf.txNum == txNum {
+			buf.flush()
+		}
 	}
 }
 
