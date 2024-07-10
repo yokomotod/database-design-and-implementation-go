@@ -64,7 +64,7 @@ func (r *checkPointRecord) String() string {
 
 func (r *checkPointRecord) Undo(tx Transaction) {}
 
-func (r *checkPointRecord) WriteToLog(lm *log.Manager) (int, error) {
+func (r *checkPointRecord) WriteToLog(lm *log.Manager) (int32, error) {
 	tpos := file.Int32Bytes
 
 	buf := make([]byte, tpos)
@@ -101,7 +101,7 @@ func (r *startRecord) String() string {
 
 func (r *startRecord) Undo(tx Transaction) {}
 
-func (r *startRecord) WriteToLog(lm *log.Manager) (int, error) {
+func (r *startRecord) WriteToLog(lm *log.Manager) (int32, error) {
 	tpos := file.Int32Bytes
 
 	reclen := tpos + file.Int32Bytes
@@ -140,7 +140,7 @@ func (r *commitRecord) String() string {
 
 func (r *commitRecord) Undo(tx Transaction) {}
 
-func (r *commitRecord) WriteToLog(lm *log.Manager) (int, error) {
+func (r *commitRecord) WriteToLog(lm *log.Manager) (int32, error) {
 	tpos := file.Int32Bytes
 
 	reclen := tpos + file.Int32Bytes
@@ -179,7 +179,7 @@ func (r *rollbackRecord) String() string {
 
 func (r *rollbackRecord) Undo(tx Transaction) {}
 
-func (r *rollbackRecord) WriteToLog(lm *log.Manager) (int, error) {
+func (r *rollbackRecord) WriteToLog(lm *log.Manager) (int32, error) {
 	tpos := file.Int32Bytes
 
 	reclen := tpos + file.Int32Bytes
@@ -194,10 +194,10 @@ type setIntRecord struct {
 	txnum  int32
 	offset int32
 	val    int32
-	blk    *file.BlockID
+	blk    file.BlockID
 }
 
-func newSetIntRecord(txnum int32, blk *file.BlockID, offset, val int32) *setIntRecord {
+func newSetIntRecord(txnum int32, blk file.BlockID, offset, val int32) *setIntRecord {
 	return &setIntRecord{
 		txnum:  txnum,
 		offset: offset,
@@ -212,9 +212,9 @@ func newSetIntRecordFrom(p *file.Page) *setIntRecord {
 
 	fpos := tpos + file.Int32Bytes
 	fileName := p.GetString(fpos)
-	bpos := fpos + file.MaxLength(len(fileName))
+	bpos := fpos + file.MaxLength(int32(len(fileName)))
 	blkNum := p.GetInt(bpos)
-	blk := file.NewBlockID(fileName, int64(blkNum))
+	blk := file.NewBlockID(fileName, blkNum)
 
 	opos := bpos + file.Int32Bytes
 	offset := p.GetInt(opos)
@@ -243,20 +243,20 @@ func (r *setIntRecord) Undo(tx Transaction) {
 	tx.Unpin(r.blk)
 }
 
-func (r *setIntRecord) WriteToLog(lm *log.Manager) (int, error) {
+func (r *setIntRecord) WriteToLog(lm *log.Manager) (int32, error) {
 	tpos := file.Int32Bytes
 	fpos := tpos + file.Int32Bytes
-	bpos := fpos + file.MaxLength(len(r.blk.FileName()))
+	bpos := fpos + file.MaxLength(int32(len(r.blk.FileName)))
 	opos := bpos + file.Int32Bytes
 	vpos := opos + file.Int32Bytes
 
 	reclen := vpos + file.Int32Bytes
 	buf := make([]byte, reclen)
 	p := file.NewPageWith(buf)
-	p.SetInt(0, int32(SetString))
+	p.SetInt(0, int32(SetInt))
 	p.SetInt(tpos, r.txnum)
-	p.SetString(fpos, r.blk.FileName())
-	p.SetInt(bpos, int32(r.blk.Number()))
+	p.SetString(fpos, r.blk.FileName)
+	p.SetInt(bpos, int32(r.blk.Number))
 	p.SetInt(opos, r.offset)
 	p.SetInt(vpos, r.val)
 
@@ -267,7 +267,16 @@ type setStringRecord struct {
 	txnum  int32
 	offset int32
 	val    string
-	blk    *file.BlockID
+	blk    file.BlockID
+}
+
+func newSetStringRecord(txnum int32, blk file.BlockID, offset int32, val string) *setStringRecord {
+	return &setStringRecord{
+		txnum:  txnum,
+		offset: offset,
+		val:    val,
+		blk:    blk,
+	}
 }
 
 func newSetStringRecordFrom(p *file.Page) *setStringRecord {
@@ -276,9 +285,9 @@ func newSetStringRecordFrom(p *file.Page) *setStringRecord {
 
 	fpos := tpos + file.Int32Bytes
 	fileName := p.GetString(fpos)
-	bpos := fpos + file.MaxLength(len(fileName))
+	bpos := fpos + file.MaxLength(int32(len(fileName)))
 	blkNum := p.GetInt(bpos)
-	blk := file.NewBlockID(fileName, int64(blkNum))
+	blk := file.NewBlockID(fileName, blkNum)
 
 	opos := bpos + file.Int32Bytes
 	offset := p.GetInt(opos)
@@ -286,12 +295,7 @@ func newSetStringRecordFrom(p *file.Page) *setStringRecord {
 	vpos := opos + file.Int32Bytes
 	val := p.GetString(vpos)
 
-	return &setStringRecord{
-		txnum:  txNum,
-		offset: offset,
-		val:    val,
-		blk:    blk,
-	}
+	return newSetStringRecord(txNum, blk, offset, val)
 }
 
 func (r *setStringRecord) Op() LogRecordType {
@@ -312,20 +316,20 @@ func (r *setStringRecord) String() string {
 	return fmt.Sprintf("<SETSTRING %d %v %d %s>", r.txnum, r.blk, r.offset, r.val)
 }
 
-func (r *setStringRecord) WriteToLog(lm *log.Manager) (int, error) {
+func (r *setStringRecord) WriteToLog(lm *log.Manager) (int32, error) {
 	tpos := file.Int32Bytes
 	fpos := tpos + file.Int32Bytes
-	bpos := fpos + file.MaxLength(len(r.blk.FileName()))
+	bpos := fpos + file.MaxLength(int32(len(r.blk.FileName)))
 	opos := bpos + file.Int32Bytes
 	vpos := opos + file.Int32Bytes
 
-	reclen := vpos + file.MaxLength(len(r.val))
+	reclen := vpos + file.MaxLength(int32(len(r.val)))
 	buf := make([]byte, reclen)
 	p := file.NewPageWith(buf)
 	p.SetInt(0, int32(SetString))
 	p.SetInt(tpos, r.txnum)
-	p.SetString(fpos, r.blk.FileName())
-	p.SetInt(bpos, int32(r.blk.Number()))
+	p.SetString(fpos, r.blk.FileName)
+	p.SetInt(bpos, int32(r.blk.Number))
 	p.SetInt(opos, r.offset)
 	p.SetString(vpos, r.val)
 

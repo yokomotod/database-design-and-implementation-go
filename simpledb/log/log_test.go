@@ -3,11 +3,12 @@ package log_test
 import (
 	"fmt"
 	"path"
+	"strconv"
+	"testing"
+
 	"simpledb/file"
 	"simpledb/log"
 	"simpledb/server"
-	"strconv"
-	"testing"
 )
 
 func TestLog(t *testing.T) {
@@ -52,7 +53,7 @@ func printLogRecords(logManager *log.Manager) string {
 		rec := iter.Next()
 		p := file.NewPageWith(rec)
 		s := p.GetString(0)
-		npos := file.MaxLength(len(s))
+		npos := file.MaxLength(int32(len(s)))
 		val := p.GetInt(npos)
 		output := fmt.Sprintf("[%s, %d]\n", s, val)
 		fmt.Print(output)
@@ -77,7 +78,7 @@ func createRecords(t *testing.T, logManager *log.Manager, start, end int) {
 			t.Fatalf("Append: %v", err)
 		}
 
-		fmt.Println(strconv.Itoa(lsn))
+		fmt.Println(fmt.Sprint(lsn))
 	}
 
 	fmt.Println("")
@@ -85,8 +86,8 @@ func createRecords(t *testing.T, logManager *log.Manager, start, end int) {
 
 // Create a log record having two values: a string and an integer.
 func createLogRecord(s string, n int) []byte {
-	spos := 0
-	npos := spos + file.MaxLength(len(s))
+	var spos int32 = 0
+	npos := spos + file.MaxLength(int32(len(s)))
 	b := make([]byte, npos+file.Int32Bytes)
 	p := file.NewPageWith(b)
 	p.SetString(spos, s)

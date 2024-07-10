@@ -3,10 +3,11 @@ package buffer_test
 import (
 	"fmt"
 	"path"
+	"testing"
+
 	"simpledb/buffer"
 	"simpledb/file"
 	"simpledb/server"
-	"testing"
 )
 
 func TestBuffer(t *testing.T) {
@@ -35,7 +36,7 @@ func TestBuffer(t *testing.T) {
 		}
 
 		p.SetInt(80, n+1)
-		buff1.SetModified(1, 0) //placeholder values
+		buff1.SetModified(1, 0) // placeholder values
 		fmt.Printf("The new value is %d\n", (n + 1))
 		bm.Unpin(buff1)
 
@@ -123,15 +124,15 @@ func TestBufferManager(t *testing.T) {
 		t.Fatalf("bm.Pin: %v", err)
 	}
 
-	wants := []int64{0, -1, -1, 0, 1, 3}
+	wants := []int32{0, -1, -1, 0, 1, 3}
 	fmt.Println("Final Buffer Allocation:")
 	for i, b := range buff {
 		if b != nil {
 			if wants[i] < 0 {
-				t.Errorf("buff[%d] pinned to block %v, but should be unpinned", i, b.Block().Number())
+				t.Errorf("buff[%d] pinned to block %v, but should be unpinned", i, b.Block().Number)
 			}
-			if b.Block().Number() != wants[i] {
-				t.Errorf("buff[%d] pinned to block %v, but should be block %d", i, b.Block().Number(), wants[i])
+			if b.Block().Number != wants[i] {
+				t.Errorf("buff[%d] pinned to block %v, but should be block %d", i, b.Block().Number, wants[i])
 			}
 		} else {
 			if wants[i] >= 0 {

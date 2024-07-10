@@ -9,10 +9,10 @@ import (
 )
 
 type Transaction interface {
-	Pin(blockID *file.BlockID)
-	SetString(blockID *file.BlockID, offset int32, val string, logRecord bool)
-	SetInt(blockID *file.BlockID, offset int32, val int32, logRecord bool)
-	Unpin(blockID *file.BlockID)
+	Pin(blockID file.BlockID) error
+	SetString(blockID file.BlockID, offset int32, val string, logRecord bool) error
+	SetInt(blockID file.BlockID, offset int32, val int32, logRecord bool) error
+	Unpin(blockID file.BlockID)
 }
 
 type Manager struct {
@@ -71,10 +71,16 @@ func (m *Manager) Recover() error {
 	return nil
 }
 
-func (m *Manager) SetInt(buf *buffer.Buffer, offset int32, newVal int32) {
+func (m *Manager) SetInt(buf *buffer.Buffer, offset int32, newVal int32) (int32, error) {
 	oldVal := buf.Contents().GetInt(offset)
 	blk := buf.Block()
-	newSetIntRecord(txnum, blk, offset, newVal).WriteToLog(m.logMgr)
+	return newSetIntRecord(m.txnum, blk, offset, oldVal).WriteToLog(m.logMgr)
+}
+
+func (m *Manager) SetString(buf *buffer.Buffer, offset int32, newVal string) (int32, error) {
+	oldVal := buf.Contents().GetString(offset)
+	blk := buf.Block()
+	return newSetStringRecord(m.txnum, blk, offset, oldVal).WriteToLog(m.logMgr)
 }
 
 func (m *Manager) doRollback() error {

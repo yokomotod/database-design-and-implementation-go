@@ -16,8 +16,8 @@ type SimpleDB struct {
 	bufferManager *buffer.Manager
 }
 
-func NewSimpleDB(dbDir string, blockSize, bufferSize int) (*SimpleDB, error) {
-	fileManager, err := file.NewManager(dbDir, int64(blockSize))
+func NewSimpleDB(dbDir string, blockSize, bufferSize int32) (*SimpleDB, error) {
+	fileManager, err := file.NewManager(dbDir, blockSize)
 	if err != nil {
 		return nil, fmt.Errorf("file.NewManager: %w", err)
 	}
