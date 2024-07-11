@@ -21,12 +21,20 @@ func NewBlockID(filename string, blockNum int64) *BlockID {
 	}
 }
 
+func (blk *BlockID) FileName() string {
+	return blk.filename
+}
+
+func (blk *BlockID) Number() int64 {
+	return blk.blockNum
+}
+
 type Page struct {
 	buffer []byte
 }
 
 const (
-	int32Bytes = 4
+	Int32Bytes = 4
 	utf16Size  = 2
 )
 
@@ -36,8 +44,14 @@ func NewPage(blockSize int64) *Page {
 	}
 }
 
+func NewPageWith(buffer []byte) *Page {
+	return &Page{
+		buffer: buffer,
+	}
+}
+
 func (p *Page) GetInt(offset int) int32 {
-	return int32(binary.LittleEndian.Uint32(p.buffer[offset : offset+int32Bytes]))
+	return int32(binary.LittleEndian.Uint32(p.buffer[offset : offset+Int32Bytes]))
 }
 
 func (p *Page) SetInt(offset int, val int32) {
@@ -46,12 +60,12 @@ func (p *Page) SetInt(offset int, val int32) {
 
 func (p *Page) GetBytes(offset int) []byte {
 	length := p.GetInt(offset)
-	return p.buffer[offset+int32Bytes : offset+int32Bytes+int(length)]
+	return p.buffer[offset+Int32Bytes : offset+Int32Bytes+int(length)]
 }
 
 func (p *Page) SetBytes(offset int, val []byte) {
 	p.SetInt(offset, int32(len(val)))
-	copy(p.buffer[offset+int32Bytes:], val)
+	copy(p.buffer[offset+Int32Bytes:], val)
 }
 
 func (p *Page) GetString(offset int) string {
@@ -59,7 +73,7 @@ func (p *Page) GetString(offset int) string {
 
 	runes := make([]uint16, length)
 	for i := range length {
-		runes[i] = p.getUint16(offset + int32Bytes + i*utf16Size)
+		runes[i] = p.getUint16(offset + Int32Bytes + i*utf16Size)
 	}
 
 	return string(utf16.Decode(runes))
@@ -71,7 +85,7 @@ func (p *Page) SetString(offset int, val string) {
 	p.SetInt(offset, int32(len(runes)*utf16Size))
 
 	for i, r := range runes {
-		p.setUint16(offset+int32Bytes+i*utf16Size, r)
+		p.setUint16(offset+Int32Bytes+i*utf16Size, r)
 	}
 }
 
@@ -84,7 +98,7 @@ func (p *Page) setUint16(offset int, val uint16) {
 }
 
 func MaxLength(length int) int {
-	return int32Bytes + length*utf16Size
+	return Int32Bytes + length*utf16Size
 }
 
 type Manager struct {
@@ -169,6 +183,40 @@ func (fm *Manager) Write(blk *BlockID, p *Page) error {
 	}
 
 	return nil
+}
+
+func (fm *Manager) Append(filename string) (*BlockID, error) {
+	newBlockNum, err := fm.Length(filename)
+	if err != nil {
+		return nil, fmt.Errorf("fm.Length: %w", err)
+	}
+
+	blk := NewBlockID(filename, newBlockNum)
+	b := make([]byte, fm.blockSize)
+
+	f, err := fm.openFile(blk.filename)
+	if err != nil {
+		return nil, fmt.Errorf("fm.openFile: %w", err)
+	}
+
+	f.Seek(blk.blockNum*fm.blockSize, 0)
+	f.Write(b)
+
+	return blk, nil
+}
+
+func (fm *Manager) Length(filename string) (int64, error) {
+	f, err := fm.openFile(filename)
+	if err != nil {
+		return 0, fmt.Errorf("fm.openFile: %w", err)
+	}
+
+	fi, err := f.Stat()
+	if err != nil {
+		return 0, fmt.Errorf("f.Stat: %w", err)
+	}
+
+	return fi.Size() / fm.blockSize, nil
 }
 
 func (fm *Manager) openFile(filename string) (*os.File, error) {
