@@ -24,6 +24,7 @@ func newLockTable() *LockTable {
 	}
 }
 
+// TODO: time.Sleepを消してかっこいい方法で実装する
 func (l *LockTable) SLock(blockID file.BlockID) error {
 	l.mux.Lock()
 	defer l.mux.Unlock()
@@ -38,6 +39,7 @@ func (l *LockTable) SLock(blockID file.BlockID) error {
 				goto notlocked
 			}
 		}
+		time.Sleep(1 * time.Millisecond)
 	}
 notlocked:
 
@@ -59,6 +61,7 @@ func (l *LockTable) XLock(blockID file.BlockID) error {
 				goto notlocked
 			}
 		}
+		time.Sleep(1 * time.Millisecond)
 	}
 notlocked:
 
