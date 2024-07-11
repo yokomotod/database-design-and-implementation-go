@@ -1,7 +1,6 @@
 package tx_test
 
 import (
-	"fmt"
 	"path"
 	"testing"
 
@@ -43,16 +42,22 @@ func TestTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ival := tx2.GetInt(blk, 80)
+	ival, err := tx2.GetInt(blk, 80)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if ival != 1 {
 		t.Fatalf("expected 1, got %d", ival)
 	}
-	sval := tx2.GetString(blk, 40)
+	sval, err := tx2.GetString(blk, 40)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if sval != "one" {
 		t.Fatalf("expected one, got %s", sval)
 	}
-	fmt.Printf("initial value at location 80 = %d\n", ival)
-	fmt.Printf("initial value at location 40 = %s\n", sval)
+	t.Logf("initial value at location 80 = %d\n", ival)
+	t.Logf("initial value at location 40 = %s\n", sval)
 	newival := ival + 1
 	newsval := sval + "!"
 	tx2.SetInt(blk, 80, newival, true)
@@ -64,22 +69,31 @@ func TestTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ival = tx3.GetInt(blk, 80)
+	ival, err = tx3.GetInt(blk, 80)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if ival != 2 {
 		t.Fatalf("expected 2, got %d", ival)
 	}
-	sval = tx3.GetString(blk, 40)
+	sval, err = tx3.GetString(blk, 40)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if sval != "one!" {
 		t.Fatalf("expected one!, got %s", sval)
 	}
-	fmt.Printf("initial value at location 80 = %d\n", ival)
-	fmt.Printf("initial value at location 40 = %s\n", sval)
+	t.Logf("initial value at location 80 = %d\n", ival)
+	t.Logf("initial value at location 40 = %s\n", sval)
 	tx3.SetInt(blk, 80, 9999, true)
-	ival = tx3.GetInt(blk, 80)
+	ival, err = tx3.GetInt(blk, 80)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if ival != 9999 {
 		t.Fatalf("expected 9999, got %d", ival)
 	}
-	fmt.Printf("pre-rollback value at location 80 = %d\n", ival)
+	t.Logf("pre-rollback value at location 80 = %d\n", ival)
 	tx3.Rollback()
 
 	tx4 := tx.New(fm, lm, bm)
@@ -87,10 +101,13 @@ func TestTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ival = tx4.GetInt(blk, 80)
+	ival, err = tx4.GetInt(blk, 80)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if ival != 2 {
 		t.Fatalf("expected 2, got %d", ival)
 	}
-	fmt.Printf("pre-recover value at location 80 = %d\n", ival)
+	t.Logf("pre-recover value at location 80 = %d\n", ival)
 	tx4.Commit()
 }

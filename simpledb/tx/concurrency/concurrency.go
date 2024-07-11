@@ -2,39 +2,52 @@ package concurrency
 
 import "simpledb/file"
 
+var lockTable = newLockTable()
+
 type Manager struct {
-	lockTable *LockTable
-	locks     map[file.BlockID]string
+	locks map[file.BlockID]string
 }
 
 func New() *Manager {
 	return &Manager{
-		lockTable: newLockTable(),
-		locks:     make(map[file.BlockID]string),
+		locks: make(map[file.BlockID]string),
 	}
 }
 
-func (m *Manager) SLock(blockID file.BlockID) {
+func (m *Manager) SLock(blockID file.BlockID) error {
 	if m.locks[blockID] != "" {
-		return
+		return nil
 	}
 
-	m.lockTable.SLock(blockID)
+	err := lockTable.SLock(blockID)
+	if err != nil {
+		return err
+	}
 	m.locks[blockID] = "S"
+	return nil
 }
 
-func (m *Manager) XLock(blockID file.BlockID) {
+func (m *Manager) XLock(blockID file.BlockID) error {
 	if m.locks[blockID] != "" {
-		return
+		return nil
 	}
 
-	m.lockTable.XLock(blockID)
+	err := m.SLock(blockID)
+	if err != nil {
+		return err
+	}
+
+	err = lockTable.XLock(blockID)
+	if err != nil {
+		return err
+	}
 	m.locks[blockID] = "X"
+	return nil
 }
 
 func (m *Manager) Release() {
 	for blockID := range m.locks {
-		m.lockTable.Unlock(blockID)
+		lockTable.Unlock(blockID)
 	}
 	clear(m.locks)
 }

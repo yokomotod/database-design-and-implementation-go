@@ -68,20 +68,29 @@ func (tx *Transaction) Unpin(blk file.BlockID) {
 	tx.mybuffers.unpin(blk)
 }
 
-func (tx *Transaction) GetInt(blk file.BlockID, offset int32) int32 {
-	tx.concurMgr.SLock(blk)
+func (tx *Transaction) GetInt(blk file.BlockID, offset int32) (int32, error) {
+	err := tx.concurMgr.SLock(blk)
+	if err != nil {
+		return 0, err
+	}
 	buff := tx.mybuffers.buffers[blk]
-	return buff.Contents().GetInt(offset)
+	return buff.Contents().GetInt(offset), nil
 }
 
-func (tx *Transaction) GetString(blk file.BlockID, offset int32) string {
-	tx.concurMgr.SLock(blk)
+func (tx *Transaction) GetString(blk file.BlockID, offset int32) (string, error) {
+	err := tx.concurMgr.SLock(blk)
+	if err != nil {
+		return "", err
+	}
 	buff := tx.mybuffers.buffers[blk]
-	return buff.Contents().GetString(offset)
+	return buff.Contents().GetString(offset), nil
 }
 
 func (tx *Transaction) SetInt(blk file.BlockID, offset, val int32, okToLog bool) error {
-	tx.concurMgr.XLock(blk)
+	err := tx.concurMgr.XLock(blk)
+	if err != nil {
+		return err
+	}
 	buff := tx.mybuffers.buffers[blk]
 	var lsn int32 = -1
 	if okToLog {
@@ -99,7 +108,10 @@ func (tx *Transaction) SetInt(blk file.BlockID, offset, val int32, okToLog bool)
 }
 
 func (tx *Transaction) SetString(blk file.BlockID, offset int32, val string, okToLog bool) error {
-	tx.concurMgr.XLock(blk)
+	err := tx.concurMgr.XLock(blk)
+	if err != nil {
+		return err
+	}
 	buff := tx.mybuffers.buffers[blk]
 	var lsn int32 = -1
 	if okToLog {
