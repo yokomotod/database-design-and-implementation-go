@@ -3,13 +3,14 @@ package record_test
 import (
 	"fmt"
 	"math/rand"
+	"path"
 	"simpledb/record"
 	"simpledb/server"
 	"testing"
 )
 
 func TestRecord(t *testing.T) {
-	db, err := server.NewSimpleDB("recordtest", 400, 8)
+	db, err := server.NewSimpleDB(path.Join(t.TempDir(), "recordtest"), 400, 8)
 	if err != nil {
 		t.Error(err)
 	}

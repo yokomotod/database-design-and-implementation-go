@@ -3,13 +3,14 @@ package record_test
 import (
 	"fmt"
 	"math/rand"
+	"path"
 	"simpledb/record"
 	"simpledb/server"
 	"testing"
 )
 
 func TestTableScan(t *testing.T) {
-	simpleDB, err := server.NewSimpleDB("tabletest", 400, 8)
+	simpleDB, err := server.NewSimpleDB(path.Join(t.TempDir(), "tabletest"), 400, 8)
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
