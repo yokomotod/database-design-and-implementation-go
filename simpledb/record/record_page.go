@@ -77,6 +77,7 @@ func (rp *RecordPage) NextAfter(slot int32) (int32, error) {
 	return rp.searchAfter(slot, Used)
 }
 
+// InsertAfter 指定されたスロットの後に新しいレコードを挿入する(inuseフラグを立てる)
 func (rp *RecordPage) InsertAfter(slot int32) (int32, error) {
 	newSlot, err := rp.searchAfter(slot, Empty)
 	if err != nil {
