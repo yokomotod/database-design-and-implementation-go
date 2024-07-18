@@ -46,7 +46,7 @@ func (s *Schema) Add(fieldName string, schema *Schema) {
 
 func (s *Schema) AddAll(sch *Schema) {
 	for _, fieldName := range sch.fields {
-		s.AddField(fieldName, sch.Type(fieldName), sch.Length(fieldName))
+		s.Add(fieldName, sch)
 	}
 }
 
