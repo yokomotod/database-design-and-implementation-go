@@ -28,10 +28,11 @@ func (m *Manager) SLock(blockID file.BlockID) error {
 }
 
 func (m *Manager) XLock(blockID file.BlockID) error {
-	if m.locks[blockID] != "" {
+	if m.HasXLock(blockID) {
 		return nil
 	}
 
+	// XLockを取る前にSlockを取る
 	err := m.SLock(blockID)
 	if err != nil {
 		return err
