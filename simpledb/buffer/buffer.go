@@ -2,16 +2,17 @@ package buffer
 
 import (
 	"errors"
+
 	"simpledb/file"
 )
 
 type Buffer struct {
 	fileManager *file.Manager
 	contents    *file.Page
-	block       *file.BlockID
-	pins        int
-	txNum       int
-	lsn         int
+	block       file.BlockID
+	pins        int32
+	txNum       int32
+	lsn         int32
 }
 
 func NewBuffer(fm *file.Manager) *Buffer {
@@ -26,11 +27,11 @@ func (b *Buffer) Contents() *file.Page {
 	return b.contents
 }
 
-func (b *Buffer) Block() *file.BlockID {
+func (b *Buffer) Block() file.BlockID {
 	return b.block
 }
 
-func (b *Buffer) SetModified(txNum, lsn int) {
+func (b *Buffer) SetModified(txNum int32, lsn int32) {
 	b.txNum = txNum
 	if lsn > 0 {
 		b.lsn = lsn
@@ -49,7 +50,7 @@ func (b *Buffer) IsPinned() bool {
 	return b.pins > 0
 }
 
-func (b *Buffer) AssignToBlock(blk *file.BlockID) {
+func (b *Buffer) AssignToBlock(blk file.BlockID) {
 	b.flush()
 	b.block = blk
 	b.fileManager.Read(blk, b.contents)
@@ -67,10 +68,10 @@ func (b *Buffer) flush() {
 
 type Manager struct {
 	bufferPool   []*Buffer
-	numAvailable int
+	numAvailable int32
 }
 
-func NewManager(fm *file.Manager, buffSize int) *Manager {
+func NewManager(fm *file.Manager, buffSize int32) *Manager {
 	bufferPool := make([]*Buffer, buffSize)
 	for i := range bufferPool {
 		bufferPool[i] = NewBuffer(fm)
@@ -82,7 +83,15 @@ func NewManager(fm *file.Manager, buffSize int) *Manager {
 	}
 }
 
-func (bm *Manager) NumAvailable() int {
+func (bm *Manager) FlushAll(txNum int32) {
+	for _, buf := range bm.bufferPool {
+		if buf.txNum == txNum {
+			buf.flush()
+		}
+	}
+}
+
+func (bm *Manager) NumAvailable() int32 {
 	return bm.numAvailable
 }
 
@@ -96,7 +105,7 @@ func (bm *Manager) Unpin(buff *Buffer) {
 
 var ErrBufferAbort = errors.New("buffer abort")
 
-func (bm *Manager) Pin(blk *file.BlockID) (*Buffer, error) {
+func (bm *Manager) Pin(blk file.BlockID) (*Buffer, error) {
 	buff := bm.tryToPin(blk)
 	if buff == nil {
 		return nil, ErrBufferAbort
@@ -105,7 +114,7 @@ func (bm *Manager) Pin(blk *file.BlockID) (*Buffer, error) {
 	return buff, nil
 }
 
-func (bm *Manager) tryToPin(blk *file.BlockID) *Buffer {
+func (bm *Manager) tryToPin(blk file.BlockID) *Buffer {
 	buff := bm.findExistingBuffer(blk)
 
 	if buff == nil {
@@ -122,10 +131,10 @@ func (bm *Manager) tryToPin(blk *file.BlockID) *Buffer {
 	return buff
 }
 
-func (bm *Manager) findExistingBuffer(blk *file.BlockID) *Buffer {
+func (bm *Manager) findExistingBuffer(blk file.BlockID) *Buffer {
 	for _, buff := range bm.bufferPool {
 		b := buff.Block()
-		if b != nil && *b == *blk {
+		if b == blk {
 			return buff
 		}
 	}

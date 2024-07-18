@@ -2,18 +2,19 @@ package log
 
 import (
 	"fmt"
+
 	"simpledb/file"
 )
 
 type LogIterator struct {
 	fileManager *file.Manager
-	blk         *file.BlockID
+	blk         file.BlockID
 	page        *file.Page
-	currentPos  int64
-	boundary    int64
+	currentPos  int32
+	boundary    int32
 }
 
-func NewIterator(fileManager *file.Manager, blk *file.BlockID) *LogIterator {
+func NewIterator(fileManager *file.Manager, blk file.BlockID) *LogIterator {
 	b := make([]byte, fileManager.BlockSize())
 	page := file.NewPageWith(b)
 
@@ -30,37 +31,36 @@ func NewIterator(fileManager *file.Manager, blk *file.BlockID) *LogIterator {
 	return it
 }
 
-func (it *LogIterator) moveToBlock(blk *file.BlockID) {
+func (it *LogIterator) moveToBlock(blk file.BlockID) {
 	it.fileManager.Read(blk, it.page)
-	it.boundary = int64(it.page.GetInt(0))
+	it.boundary = it.page.GetInt(0)
 	it.currentPos = it.boundary
 }
 
 func (it *LogIterator) HasNext() bool {
-	return it.currentPos < it.fileManager.BlockSize() || it.blk.Number() > 0
+	return it.currentPos < it.fileManager.BlockSize() || it.blk.Number > 0
 }
 
 func (it *LogIterator) Next() []byte {
 	if it.currentPos == it.fileManager.BlockSize() {
-		it.blk = file.NewBlockID(it.blk.FileName(), it.blk.Number()-1)
+		it.blk = file.NewBlockID(it.blk.FileName, it.blk.Number-1)
 		it.moveToBlock(it.blk)
 	}
 
-	rec := it.page.GetBytes(int(it.currentPos))
-	it.currentPos += int64(file.Int32Bytes + len(rec))
+	rec := it.page.GetBytes(it.currentPos)
+	it.currentPos += file.Int32Bytes + int32(len(rec))
 
 	return rec
-
 }
 
 type Manager struct {
 	fileManager *file.Manager
 	logFile     string
 	logPage     *file.Page
-	currentBlk  *file.BlockID
+	currentBlk  file.BlockID
 	// LSN: log sequence number
-	latestLSN    int
-	lastSavedLSN int
+	latestLSN    int32
+	lastSavedLSN int32
 }
 
 func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
@@ -89,13 +89,12 @@ func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
 	}
 
 	return lm, nil
-
 }
 
-func (lm *Manager) appendNewBlock() (*file.BlockID, error) {
+func (lm *Manager) appendNewBlock() (file.BlockID, error) {
 	blk, err := lm.fileManager.Append(lm.logFile)
 	if err != nil {
-		return nil, fmt.Errorf("fileManager.Append: %w", err)
+		return file.BlockID{}, fmt.Errorf("fileManager.Append: %w", err)
 	}
 
 	lm.logPage.SetInt(0, int32(lm.fileManager.BlockSize()))
@@ -104,7 +103,7 @@ func (lm *Manager) appendNewBlock() (*file.BlockID, error) {
 	return blk, nil
 }
 
-func (lm *Manager) Flush(lsn int) {
+func (lm *Manager) Flush(lsn int32) {
 	if lsn < lm.lastSavedLSN {
 		return
 	}
@@ -122,9 +121,9 @@ func (lm *Manager) Iterator() *LogIterator {
 	return NewIterator(lm.fileManager, lm.currentBlk)
 }
 
-func (lm *Manager) Append(logRecord []byte) (int, error) {
-	boundary := int(lm.logPage.GetInt(0))
-	recordSize := len(logRecord)
+func (lm *Manager) Append(logRecord []byte) (int32, error) {
+	boundary := lm.logPage.GetInt(0)
+	recordSize := int32(len(logRecord))
 	bytesNeeded := recordSize + file.Int32Bytes
 
 	if boundary-bytesNeeded < file.Int32Bytes { // It doesn't fit
@@ -134,7 +133,7 @@ func (lm *Manager) Append(logRecord []byte) (int, error) {
 			return 0, fmt.Errorf("lm.appendNewBlock: %w", err)
 		}
 		lm.currentBlk = currentBlk
-		boundary = int(lm.logPage.GetInt(0))
+		boundary = lm.logPage.GetInt(0)
 	}
 	recPos := boundary - bytesNeeded
 	lm.logPage.SetBytes(recPos, logRecord)
@@ -143,5 +142,4 @@ func (lm *Manager) Append(logRecord []byte) (int, error) {
 	lm.latestLSN += 1
 
 	return lm.latestLSN, nil
-
 }

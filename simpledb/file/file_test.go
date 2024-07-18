@@ -19,11 +19,11 @@ func TestFile(t *testing.T) {
 	fm := db.FileManager()
 
 	p1 := file.NewPage(fm.BlockSize())
-	pos1 := 88
+	var pos1 int32 = 88
 	strVal := "abcdefghijklm"
 	p1.SetString(pos1, strVal)
 
-	size := file.MaxLength(len(strVal))
+	size := file.MaxLength(int32(len(strVal)))
 	pos2 := pos1 + size
 	intVar := int32(345)
 	p1.SetInt(pos2, intVar)
