@@ -158,6 +158,10 @@ func (ts *TableScan) moveToNewBlock() error {
 		return err
 	}
 	ts.rp = NewRecordPage(ts.tx, blockId, ts.layout)
+	err = ts.rp.Format()
+	if err != nil {
+		return err
+	}
 	ts.currentSlot = -1
 	return nil
 }
