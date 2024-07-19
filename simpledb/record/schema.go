@@ -7,27 +7,27 @@ const (
 	VARCHAR
 )
 
-type FieldInfo struct {
+type fieldInfo struct {
 	FieldType FieldType
 	Length    int32
 }
 
 type Schema struct {
 	fields []string
-	info   map[string]*FieldInfo
+	info   map[string]*fieldInfo
 }
 
 func NewSchema() *Schema {
 	return &Schema{
 		fields: make([]string, 0),
-		info:   make(map[string]*FieldInfo),
+		info:   make(map[string]*fieldInfo),
 	}
 }
 
 // AddField フィールドを追加する。lengthはSTRINGの場合のみ有効
 func (s *Schema) AddField(fieldName string, fieldType FieldType, length int32) {
 	s.fields = append(s.fields, fieldName)
-	s.info[fieldName] = &FieldInfo{FieldType: fieldType, Length: length}
+	s.info[fieldName] = &fieldInfo{FieldType: fieldType, Length: length}
 }
 
 func (s *Schema) AddIntField(fieldName string) {
