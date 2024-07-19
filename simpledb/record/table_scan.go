@@ -48,12 +48,11 @@ func (ts *TableScan) Next() (bool, error) {
 		}
 		if atLastBlock {
 			return false, nil
-		} else {
-			ts.moveToBlock(ts.rp.Block().Number + 1)
-			ts.currentSlot, err = ts.rp.NextAfter(ts.currentSlot)
-			if err != nil {
-				return false, err
-			}
+		}
+		ts.moveToBlock(ts.rp.Block().Number + 1)
+		ts.currentSlot, err = ts.rp.NextAfter(ts.currentSlot)
+		if err != nil {
+			return false, err
 		}
 	}
 	return true, nil
