@@ -10,6 +10,7 @@ import (
 )
 
 func TestRecord(t *testing.T) {
+	t.Parallel()
 	db, err := server.NewSimpleDB(path.Join(t.TempDir(), "recordtest"), 400, 8)
 	if err != nil {
 		t.Error(err)

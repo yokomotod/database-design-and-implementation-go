@@ -6,6 +6,7 @@ import (
 )
 
 func TestLayout(t *testing.T) {
+	t.Parallel()
 	schema := record.NewSchema()
 	schema.AddIntField("A")
 	schema.AddStringField("B", 9)

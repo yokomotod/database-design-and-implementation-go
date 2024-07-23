@@ -10,6 +10,7 @@ import (
 )
 
 func TestTableScan(t *testing.T) {
+	t.Parallel()
 	simpleDB, err := server.NewSimpleDB(path.Join(t.TempDir(), "tabletest"), 400, 8)
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
