@@ -7,7 +7,7 @@ import (
 type Layout struct {
 	schema   *Schema
 	offset   map[string]int32
-	slotsize int32
+	slotSize int32
 }
 
 func NewLayoutFromSchema(schema *Schema) *Layout {
@@ -21,8 +21,8 @@ func NewLayoutFromSchema(schema *Schema) *Layout {
 	return NewLayout(schema, offsets, pos)
 }
 
-func NewLayout(schema *Schema, offsets map[string]int32, slotsize int32) *Layout {
-	return &Layout{schema, offsets, slotsize}
+func NewLayout(schema *Schema, offsets map[string]int32, slotSize int32) *Layout {
+	return &Layout{schema, offsets, slotSize}
 }
 
 func (l *Layout) Schema() *Schema {
@@ -34,7 +34,7 @@ func (l *Layout) Offset(fieldName string) int32 {
 }
 
 func (l *Layout) SlotSize() int32 {
-	return l.slotsize
+	return l.slotSize
 }
 
 func lengthInBytes(schema *Schema, fieldName string) int32 {
