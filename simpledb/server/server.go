@@ -6,6 +6,7 @@ import (
 	"simpledb/buffer"
 	"simpledb/file"
 	"simpledb/log"
+	"simpledb/tx"
 )
 
 const logFile = "simpledb.log"
@@ -33,6 +34,14 @@ func NewSimpleDB(dbDir string, blockSize, bufferSize int32) (*SimpleDB, error) {
 		logManager:    logManager,
 		bufferManager: bufferManager,
 	}, nil
+}
+
+func (db *SimpleDB) NewTx() *tx.Transaction {
+	return tx.New(
+		db.fileManager,
+		db.logManager,
+		db.bufferManager,
+	)
 }
 
 func (db *SimpleDB) FileManager() *file.Manager {
