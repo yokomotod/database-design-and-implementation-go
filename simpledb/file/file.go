@@ -96,15 +96,18 @@ func MaxLength(length int32) int32 {
 type Manager struct {
 	dbDir     string
 	blockSize int32
+	isNew     bool
 	files     map[string]*os.File
 }
 
 func NewManager(dbDir string, blockSize int32) (*Manager, error) {
+	isNew := false
 	// if not exists, create dbDir recursively
 	if _, err := os.Stat(dbDir); err != nil {
 		if !os.IsNotExist(err) {
 			return nil, fmt.Errorf("os.Stat: %w", err)
 		}
+		isNew = true
 
 		err = os.MkdirAll(dbDir, 0o700)
 		if err != nil {
@@ -131,8 +134,13 @@ func NewManager(dbDir string, blockSize int32) (*Manager, error) {
 	return &Manager{
 		dbDir:     dbDir,
 		blockSize: blockSize,
+		isNew:     isNew,
 		files:     make(map[string]*os.File),
 	}, nil
+}
+
+func (fm *Manager) IsNew() bool {
+	return fm.isNew
 }
 
 func (fm *Manager) BlockSize() int32 {

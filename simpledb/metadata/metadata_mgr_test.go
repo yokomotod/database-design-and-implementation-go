@@ -4,22 +4,18 @@ import (
 	"fmt"
 	"math/rand"
 	"path"
-	"simpledb/metadata"
 	"simpledb/record"
 	"simpledb/server"
 	"testing"
 )
 
 func TestMetadataMgr(t *testing.T) {
-	simpleDB, err := server.NewSimpleDB(path.Join(t.TempDir(), "tabletest"), 400, 8)
+	simpleDB, err := server.NewSimpleDBWithMetadata(path.Join(t.TempDir(), "tabletest"))
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
+	mdm := simpleDB.MetadataMgr()
 	tx := simpleDB.NewTx()
-	mdm, err := metadata.NewMetadataMgr(true, tx)
-	if err != nil {
-		t.Fatalf("failed to create MetadataMgr: %v", err)
-	}
 
 	schema := record.NewSchema()
 	schema.AddIntField("A")
