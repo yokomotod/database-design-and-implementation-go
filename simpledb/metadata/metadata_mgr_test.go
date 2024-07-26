@@ -9,12 +9,12 @@ import (
 	"testing"
 )
 
-func TestMetadataMgr(t *testing.T) {
+func TestMetadataManager(t *testing.T) {
 	simpleDB, err := server.NewSimpleDBWithMetadata(path.Join(t.TempDir(), "tabletest"))
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	mdm := simpleDB.MetadataMgr()
+	mdm := simpleDB.MetadataManager()
 	tx := simpleDB.NewTx()
 
 	schema := record.NewSchema()
@@ -63,8 +63,8 @@ func TestMetadataMgr(t *testing.T) {
 	fmt.Printf("V(MyTable,B) = %d\n", si.DistinctValues("B"))
 
 	// Part 3: View Metadata
-	viewdef := "select B from MyTable where A = 1"
-	err = mdm.CreateView("viewA", viewdef, tx)
+	viewDef := "select B from MyTable where A = 1"
+	err = mdm.CreateView("viewA", viewDef, tx)
 	if err != nil {
 		t.Fatalf("failed to create view: %v", err)
 	}
@@ -83,18 +83,18 @@ func TestMetadataMgr(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create indexB: %v", err)
 	}
-	idxmap, err := mdm.GetIndexInfo("MyTable", tx)
+	indexMap, err := mdm.GetIndexInfo("MyTable", tx)
 	if err != nil {
 		t.Fatalf("failed to get IndexInfo: %v", err)
 	}
-	ii := idxmap["A"]
+	ii := indexMap["A"]
 	// TODO: HashIndex が実装されたら確認できる
 	// fmt.Printf("B(indexA) = %d\n", ii.BlocksAccessed())
 	fmt.Printf("R(indexA) = %d\n", ii.RecordsOutput())
 	fmt.Printf("V(indexA,A) = %d\n", ii.DistinctValues("A"))
 	fmt.Printf("V(indexA,B) = %d\n", ii.DistinctValues("B"))
 
-	ii = idxmap["B"]
+	ii = indexMap["B"]
 	// TODO: HashIndex が実装されたら確認できる
 	// fmt.Printf("B(indexB) = %d\n", ii.BlocksAccessed())
 	fmt.Printf("R(indexB) = %d\n", ii.RecordsOutput())

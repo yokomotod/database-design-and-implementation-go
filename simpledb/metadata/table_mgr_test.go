@@ -9,23 +9,23 @@ import (
 	"testing"
 )
 
-func TestTableMgr(t *testing.T) {
+func TestTableManager(t *testing.T) {
 	simpleDB, err := server.NewSimpleDB(path.Join(t.TempDir(), "tabletest"), 400, 8)
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
 	transaction := simpleDB.NewTx()
-	tableMgr := metadata.NewTableMgr(true, transaction)
+	tableManager := metadata.NewTableManager(true, transaction)
 
 	schema := record.NewSchema()
 	schema.AddIntField("A")
 	schema.AddStringField("B", 9)
-	err = tableMgr.CreateTable("MyTable", schema, transaction)
+	err = tableManager.CreateTable("MyTable", schema, transaction)
 	if err != nil {
 		t.Fatalf("failed to create MyTable: %v", err)
 	}
 
-	layout, err := tableMgr.GetLayout("MyTable", transaction)
+	layout, err := tableManager.GetLayout("MyTable", transaction)
 	if err != nil {
 		t.Fatalf("failed to GetLayout: %v", err)
 	}

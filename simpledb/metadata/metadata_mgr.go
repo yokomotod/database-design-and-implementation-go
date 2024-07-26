@@ -5,54 +5,54 @@ import (
 	"simpledb/tx"
 )
 
-type MetadataMgr struct {
-	tblMgr  *TableMgr
-	viewMgr *ViewMgr
-	statMgr *StatMgr
-	idxMgr  *IndexMgr
+type Manager struct {
+	tableManager *TableManager
+	viewManager  *ViewManager
+	statManager  *StatManager
+	indexManager *IndexManager
 }
 
-func NewMetadataMgr(isNew bool, tx *tx.Transaction) (*MetadataMgr, error) {
-	tblmgr := NewTableMgr(isNew, tx)
-	viewmgr, err := NewViewMgr(isNew, tblmgr, tx)
+func NewManager(isNew bool, tx *tx.Transaction) (*Manager, error) {
+	tableManager := NewTableManager(isNew, tx)
+	viewManager, err := NewViewManager(isNew, tableManager, tx)
 	if err != nil {
 		return nil, err
 	}
-	statmgr, err := NewStatMgr(tblmgr, tx)
+	statManager, err := NewStatManager(tableManager, tx)
 	if err != nil {
 		return nil, err
 	}
-	idxmgr, err := NewIndexMgr(isNew, tblmgr, statmgr, tx)
+	indexManager, err := NewIndexManager(isNew, tableManager, statManager, tx)
 	if err != nil {
 		return nil, err
 	}
-	return &MetadataMgr{tblmgr, viewmgr, statmgr, idxmgr}, nil
+	return &Manager{tableManager, viewManager, statManager, indexManager}, nil
 }
 
-func (mm *MetadataMgr) CreateTable(tblname string, schema *record.Schema, tx *tx.Transaction) error {
-	return mm.tblMgr.CreateTable(tblname, schema, tx)
+func (mm *Manager) CreateTable(tableName string, schema *record.Schema, tx *tx.Transaction) error {
+	return mm.tableManager.CreateTable(tableName, schema, tx)
 }
 
-func (mm *MetadataMgr) GetLayout(tblname string, tx *tx.Transaction) (*record.Layout, error) {
-	return mm.tblMgr.GetLayout(tblname, tx)
+func (mm *Manager) GetLayout(tableName string, tx *tx.Transaction) (*record.Layout, error) {
+	return mm.tableManager.GetLayout(tableName, tx)
 }
 
-func (mm *MetadataMgr) CreateView(viewname string, viewdef string, tx *tx.Transaction) error {
-	return mm.viewMgr.CreateView(viewname, viewdef, tx)
+func (mm *Manager) CreateView(viewName string, viewDef string, tx *tx.Transaction) error {
+	return mm.viewManager.CreateView(viewName, viewDef, tx)
 }
 
-func (mm *MetadataMgr) GetViewDef(viewname string, tx *tx.Transaction) (string, error) {
-	return mm.viewMgr.GetViewDef(viewname, tx)
+func (mm *Manager) GetViewDef(viewName string, tx *tx.Transaction) (string, error) {
+	return mm.viewManager.GetViewDef(viewName, tx)
 }
 
-func (mm *MetadataMgr) CreateIndex(idxname string, tblname string, fldname string, tx *tx.Transaction) error {
-	return mm.idxMgr.CreateIndex(idxname, tblname, fldname, tx)
+func (mm *Manager) CreateIndex(indexName string, tableName string, fieldName string, tx *tx.Transaction) error {
+	return mm.indexManager.CreateIndex(indexName, tableName, fieldName, tx)
 }
 
-func (mm *MetadataMgr) GetIndexInfo(tblname string, tx *tx.Transaction) (map[string]*IndexInfo, error) {
-	return mm.idxMgr.GetIndexInfo(tblname, tx)
+func (mm *Manager) GetIndexInfo(tableName string, tx *tx.Transaction) (map[string]*IndexInfo, error) {
+	return mm.indexManager.GetIndexInfo(tableName, tx)
 }
 
-func (mm *MetadataMgr) GetStatInfo(tblname string, layout *record.Layout, tx *tx.Transaction) (*StatInfo, error) {
-	return mm.statMgr.GetStatInfo(tblname, layout, tx)
+func (mm *Manager) GetStatInfo(tableName string, layout *record.Layout, tx *tx.Transaction) (*StatInfo, error) {
+	return mm.statManager.GetStatInfo(tableName, layout, tx)
 }

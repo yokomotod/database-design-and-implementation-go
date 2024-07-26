@@ -9,85 +9,87 @@ const (
 	MaxName = 16
 )
 
-type TableMgr struct {
-	tcatLayout *record.Layout
-	fcatLayout *record.Layout
+type TableManager struct {
+	tableCatalogLayout *record.Layout
+	fieldCatalogLayout *record.Layout
 }
 
-func NewTableMgr(isNew bool, tx *tx.Transaction) *TableMgr {
-	tcatSchema := record.NewSchema()
-	tcatSchema.AddStringField("tblname", MaxName)
-	tcatSchema.AddIntField("slotsize")
-	tcatLayout := record.NewLayoutFromSchema(tcatSchema)
-	fcatSchema := record.NewSchema()
-	fcatSchema.AddStringField("tblname", MaxName)
-	fcatSchema.AddStringField("fldname", MaxName)
-	fcatSchema.AddIntField("type")
-	fcatSchema.AddIntField("length")
-	fcatSchema.AddIntField("offset")
-	fcatLayout := record.NewLayoutFromSchema(fcatSchema)
-	tableMgr := &TableMgr{tcatLayout, fcatLayout}
+func NewTableManager(isNew bool, tx *tx.Transaction) *TableManager {
+	tableCatalogSchema := record.NewSchema()
+	tableCatalogSchema.AddStringField("tblname", MaxName)
+	tableCatalogSchema.AddIntField("slotsize")
+	tableCatalogLayout := record.NewLayoutFromSchema(tableCatalogSchema)
+
+	fieldCatalogSchema := record.NewSchema()
+	fieldCatalogSchema.AddStringField("tblname", MaxName)
+	fieldCatalogSchema.AddStringField("fldname", MaxName)
+	fieldCatalogSchema.AddIntField("type")
+	fieldCatalogSchema.AddIntField("length")
+	fieldCatalogSchema.AddIntField("offset")
+	fieldCatalogLayout := record.NewLayoutFromSchema(fieldCatalogSchema)
+
+	tableManager := &TableManager{tableCatalogLayout, fieldCatalogLayout}
 	if isNew {
-		tableMgr.CreateTable("tblcat", tcatSchema, tx)
-		tableMgr.CreateTable("fldcat", fcatSchema, tx)
+		tableManager.CreateTable("tblcat", tableCatalogSchema, tx)
+		tableManager.CreateTable("fldcat", fieldCatalogSchema, tx)
 	}
-	return tableMgr
+	return tableManager
 }
 
-func (tm *TableMgr) CreateTable(tblname string, schema *record.Schema, tx *tx.Transaction) error {
+func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx *tx.Transaction) error {
 	layout := record.NewLayoutFromSchema(schema)
-	tcat, err := record.NewTableScan(tx, "tblcat", tm.tcatLayout)
+	tableCatalog, err := record.NewTableScan(tx, "tblcat", tm.tableCatalogLayout)
 	if err != nil {
 		return err
 	}
-	defer tcat.Close()
+	defer tableCatalog.Close()
 
-	tcat.Insert()
-	tcat.SetString("tblname", tblname)
-	tcat.SetInt("slotsize", layout.SlotSize())
+	tableCatalog.Insert()
+	tableCatalog.SetString("tblname", tableName)
+	tableCatalog.SetInt("slotsize", layout.SlotSize())
 
-	fcat, err := record.NewTableScan(tx, "fldcat", tm.fcatLayout)
+	fieldCatalog, err := record.NewTableScan(tx, "fldcat", tm.fieldCatalogLayout)
 	if err != nil {
 		return err
 	}
-	defer fcat.Close()
+	defer fieldCatalog.Close()
 
 	for _, fieldName := range schema.Fields() {
-		fcat.Insert()
-		fcat.SetString("tblname", tblname)
-		fcat.SetString("fldname", fieldName)
-		fcat.SetInt("type", int32(schema.Type(fieldName)))
-		fcat.SetInt("length", schema.Length(fieldName))
-		fcat.SetInt("offset", layout.Offset(fieldName))
+		fieldCatalog.Insert()
+		fieldCatalog.SetString("tblname", tableName)
+		fieldCatalog.SetString("fldname", fieldName)
+		fieldCatalog.SetInt("type", int32(schema.Type(fieldName)))
+		fieldCatalog.SetInt("length", schema.Length(fieldName))
+		fieldCatalog.SetInt("offset", layout.Offset(fieldName))
 	}
 	return nil
 }
 
-func (tm *TableMgr) GetLayout(tblname string, tx *tx.Transaction) (*record.Layout, error) {
+func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record.Layout, error) {
 	var size int32 = -1
-	tcat, err := record.NewTableScan(tx, "tblcat", tm.tcatLayout)
+	tableCatalog, err := record.NewTableScan(tx, "tblcat", tm.tableCatalogLayout)
 	if err != nil {
 		return nil, err
 	}
-	defer tcat.Close()
+	defer tableCatalog.Close()
 
-	next, err := tcat.Next()
+	next, err := tableCatalog.Next()
 	if err != nil {
 		return nil, err
 	}
 	for next {
-		t, err := tcat.GetString("tblname")
+		t, err := tableCatalog.GetString("tblname")
 		if err != nil {
 			return nil, err
 		}
-		if t == tblname {
-			size, err = tcat.GetInt("slotsize")
+		if t == tableName {
+			size, err = tableCatalog.GetInt("slotsize")
 			if err != nil {
 				return nil, err
 			}
 			break
 		}
-		next, err = tcat.Next()
+		next, err = tableCatalog.Next()
 		if err != nil {
 			return nil, err
 		}
@@ -95,42 +97,42 @@ func (tm *TableMgr) GetLayout(tblname string, tx *tx.Transaction) (*record.Layou
 
 	schema := record.NewSchema()
 	offsets := make(map[string]int32)
-	fcat, err := record.NewTableScan(tx, "fldcat", tm.fcatLayout)
+	fieldCatalog, err := record.NewTableScan(tx, "fldcat", tm.fieldCatalogLayout)
 	if err != nil {
 		return nil, err
 	}
-	defer fcat.Close()
+	defer fieldCatalog.Close()
 
-	next, err = fcat.Next()
+	next, err = fieldCatalog.Next()
 	if err != nil {
 		return nil, err
 	}
 	for next {
-		t, err := fcat.GetString("tblname")
+		t, err := fieldCatalog.GetString("tblname")
 		if err != nil {
 			return nil, err
 		}
-		if t == tblname {
-			fldname, err := fcat.GetString("fldname")
+		if t == tableName {
+			fldname, err := fieldCatalog.GetString("fldname")
 			if err != nil {
 				return nil, err
 			}
-			fldtype, err := fcat.GetInt("type")
+			fldtype, err := fieldCatalog.GetInt("type")
 			if err != nil {
 				return nil, err
 			}
-			fldlen, err := fcat.GetInt("length")
+			fldlen, err := fieldCatalog.GetInt("length")
 			if err != nil {
 				return nil, err
 			}
-			offset, err := fcat.GetInt("offset")
+			offset, err := fieldCatalog.GetInt("offset")
 			if err != nil {
 				return nil, err
 			}
 			offsets[fldname] = offset
 			schema.AddField(fldname, record.FieldType(fldtype), fldlen)
 		}
-		next, err = fcat.Next()
+		next, err = fieldCatalog.Next()
 		if err != nil {
 			return nil, err
 		}

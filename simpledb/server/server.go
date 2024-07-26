@@ -18,7 +18,7 @@ type SimpleDB struct {
 	fileManager     *file.Manager
 	logManager      *log.Manager
 	bufferManager   *buffer.Manager
-	metadataManager *metadata.MetadataMgr
+	metadataManager *metadata.Manager
 }
 
 func NewSimpleDB(dbDir string, blockSize, bufferSize int32) (*SimpleDB, error) {
@@ -53,9 +53,9 @@ func NewSimpleDBWithMetadata(dirname string) (*SimpleDB, error) {
 		fmt.Println("recovering existing database")
 		tx.Recover()
 	}
-	db.metadataManager, err = metadata.NewMetadataMgr(isNew, tx)
+	db.metadataManager, err = metadata.NewManager(isNew, tx)
 	if err != nil {
-		return nil, fmt.Errorf("New MetadataMgr: %w", err)
+		return nil, fmt.Errorf("metadata.NewManager: %w", err)
 	}
 	tx.Commit()
 	return db, nil
@@ -81,6 +81,6 @@ func (db *SimpleDB) BufferManager() *buffer.Manager {
 	return db.bufferManager
 }
 
-func (db *SimpleDB) MetadataMgr() *metadata.MetadataMgr {
+func (db *SimpleDB) MetadataManager() *metadata.Manager {
 	return db.metadataManager
 }

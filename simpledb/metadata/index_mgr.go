@@ -6,83 +6,83 @@ import (
 )
 
 type IndexInfo struct {
-	idxname   string
-	fldname   string
-	tx        *tx.Transaction
-	tblSchema *record.Schema
-	idxLayout *record.Layout
-	si        *StatInfo
+	indexName   string
+	fieldName   string
+	tx          *tx.Transaction
+	tableSchema *record.Schema
+	indexLayout *record.Layout
+	si          *StatInfo
 }
 
-func NewIndexInfo(idxname string, fldname string, tblSchema *record.Schema, tx *tx.Transaction, si *StatInfo) *IndexInfo {
-	ii := &IndexInfo{idxname, fldname, tx, tblSchema, nil, si}
-	ii.idxLayout = ii.createIdxLayout()
+func NewIndexInfo(indexName string, fieldName string, tableSchema *record.Schema, tx *tx.Transaction, si *StatInfo) *IndexInfo {
+	ii := &IndexInfo{indexName, fieldName, tx, tableSchema, nil, si}
+	ii.indexLayout = ii.createIndexLayout()
 	return ii
 }
 
 // TODO: HashIndex が作られた際に要再実装
 // func (ii *IndexInfo) Open() *Index {
-// 	return NewHashIndex(ii.tx, ii.idxname, ii.idxLayout)
+// 	return NewHashIndex(ii.tx, ii.indexName, ii.indexLayout)
 // }
 //
 // func (ii *IndexInfo) BlocksAccessed() int {
-// 	rpb := ii.tx.BlockSize() / ii.idxLayout.SlotSize()
+// 	rpb := ii.tx.BlockSize() / ii.indexLayout.SlotSize()
 // 	numblocks := ii.si.RecordsOutput() / rpb
 // 	return HashIndex.SearchCost(numblocks, rpb)
 // }
 
 func (ii *IndexInfo) RecordsOutput() int {
-	return ii.si.RecordsOutput() / ii.si.DistinctValues(ii.fldname)
+	return ii.si.RecordsOutput() / ii.si.DistinctValues(ii.fieldName)
 }
 
 func (ii *IndexInfo) DistinctValues(fname string) int {
 	var result int
-	if ii.fldname == fname {
+	if ii.fieldName == fname {
 		result = 1
 	} else {
-		result = ii.si.DistinctValues(ii.fldname)
+		result = ii.si.DistinctValues(ii.fieldName)
 	}
 	return result
 }
 
-func (ii *IndexInfo) createIdxLayout() *record.Layout {
+func (ii *IndexInfo) createIndexLayout() *record.Layout {
 	schema := record.NewSchema()
 	schema.AddIntField("block")
 	schema.AddIntField("id")
-	if ii.tblSchema.Type(ii.fldname) == record.INT {
+	if ii.tableSchema.Type(ii.fieldName) == record.INT {
 		schema.AddIntField("dataval")
 	} else {
-		fldlen := ii.tblSchema.Length(ii.fldname)
+		fldlen := ii.tableSchema.Length(ii.fieldName)
 		schema.AddStringField("dataval", fldlen)
 	}
 	return record.NewLayoutFromSchema(schema)
 }
 
-type IndexMgr struct {
-	layout  *record.Layout
-	tblMgr  *TableMgr
-	statMgr *StatMgr
+type IndexManager struct {
+	layout       *record.Layout
+	tableManager *TableManager
+	statManager  *StatManager
 }
 
-func NewIndexMgr(isNew bool, tblMgr *TableMgr, statMgr *StatMgr, tx *tx.Transaction) (*IndexMgr, error) {
+func NewIndexManager(isNew bool, tableManager *TableManager, statManager *StatManager, tx *tx.Transaction) (*IndexManager, error) {
 	if isNew {
 		schema := record.NewSchema()
 		schema.AddStringField("indexname", MaxName)
 		schema.AddStringField("tablename", MaxName)
 		schema.AddStringField("fieldname", MaxName)
-		err := tblMgr.CreateTable("idxcat", schema, tx)
+		err := tableManager.CreateTable("idxcat", schema, tx)
 		if err != nil {
 			return nil, err
 		}
 	}
-	layout, err := tblMgr.GetLayout("idxcat", tx)
+	layout, err := tableManager.GetLayout("idxcat", tx)
 	if err != nil {
 		return nil, err
 	}
-	return &IndexMgr{layout, tblMgr, statMgr}, nil
+	return &IndexManager{layout, tableManager, statManager}, nil
 }
 
-func (im *IndexMgr) CreateIndex(idxname string, tblname string, fldname string, tx *tx.Transaction) error {
+func (im *IndexManager) CreateIndex(indexName string, tableName string, fieldName string, tx *tx.Transaction) error {
 	ts, err := record.NewTableScan(tx, "idxcat", im.layout)
 	if err != nil {
 		return err
@@ -90,13 +90,13 @@ func (im *IndexMgr) CreateIndex(idxname string, tblname string, fldname string, 
 	defer ts.Close()
 
 	ts.Insert()
-	ts.SetString("indexname", idxname)
-	ts.SetString("tablename", tblname)
-	ts.SetString("fieldname", fldname)
+	ts.SetString("indexname", indexName)
+	ts.SetString("tablename", tableName)
+	ts.SetString("fieldname", fieldName)
 	return nil
 }
 
-func (im *IndexMgr) GetIndexInfo(tblname string, tx *tx.Transaction) (map[string]*IndexInfo, error) {
+func (im *IndexManager) GetIndexInfo(tableName string, tx *tx.Transaction) (map[string]*IndexInfo, error) {
 	result := make(map[string]*IndexInfo)
 	ts, err := record.NewTableScan(tx, "idxcat", im.layout)
 	if err != nil {
@@ -108,29 +108,29 @@ func (im *IndexMgr) GetIndexInfo(tblname string, tx *tx.Transaction) (map[string
 		return nil, err
 	}
 	for next {
-		tblname, err := ts.GetString("tablename")
+		tn, err := ts.GetString("tablename")
 		if err != nil {
 			return nil, err
 		}
-		if tblname == tblname {
-			idxname, err := ts.GetString("indexname")
+		if tn == tableName {
+			indexName, err := ts.GetString("indexname")
 			if err != nil {
 				return nil, err
 			}
-			fldname, err := ts.GetString("fieldname")
+			fieldName, err := ts.GetString("fieldname")
 			if err != nil {
 				return nil, err
 			}
-			tblLayout, err := im.tblMgr.GetLayout(tblname, tx)
+			tblLayout, err := im.tableManager.GetLayout(tableName, tx)
 			if err != nil {
 				return nil, err
 			}
-			tblsi, err := im.statMgr.GetStatInfo(tblname, tblLayout, tx)
+			tblsi, err := im.statManager.GetStatInfo(tableName, tblLayout, tx)
 			if err != nil {
 				return nil, err
 			}
-			ii := NewIndexInfo(idxname, fldname, tblLayout.Schema(), tx, tblsi)
-			result[fldname] = ii
+			ii := NewIndexInfo(indexName, fieldName, tblLayout.Schema(), tx, tblsi)
+			result[fieldName] = ii
 		}
 		next, err = ts.Next()
 		if err != nil {

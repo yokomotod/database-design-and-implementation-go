@@ -7,26 +7,26 @@ import (
 
 const maxViewDef = 100
 
-type ViewMgr struct {
-	tblMgr *TableMgr
+type ViewManager struct {
+	tableManager *TableManager
 }
 
-func NewViewMgr(isNew bool, tblMgr *TableMgr, tx *tx.Transaction) (*ViewMgr, error) {
-	viewMgr := &ViewMgr{tblMgr}
+func NewViewManager(isNew bool, tableManager *TableManager, tx *tx.Transaction) (*ViewManager, error) {
+	viewManager := &ViewManager{tableManager}
 	if isNew {
 		schema := record.NewSchema()
 		schema.AddStringField("viewname", MaxName)
 		schema.AddStringField("viewdef", maxViewDef)
-		err := tblMgr.CreateTable("viewcat", schema, tx)
+		err := tableManager.CreateTable("viewcat", schema, tx)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return viewMgr, nil
+	return viewManager, nil
 }
 
-func (vm *ViewMgr) CreateView(vname string, vdef string, tx *tx.Transaction) error {
-	layout, err := vm.tblMgr.GetLayout("viewcat", tx)
+func (vm *ViewManager) CreateView(viewName string, viewDef string, tx *tx.Transaction) error {
+	layout, err := vm.tableManager.GetLayout("viewcat", tx)
 	if err != nil {
 		return err
 	}
@@ -37,15 +37,15 @@ func (vm *ViewMgr) CreateView(vname string, vdef string, tx *tx.Transaction) err
 	defer ts.Close()
 
 	ts.Insert() // 書籍の方に記載されておらず罠
-	ts.SetString("viewname", vname)
-	ts.SetString("viewdef", vdef)
+	ts.SetString("viewname", viewName)
+	ts.SetString("viewdef", viewDef)
 	return nil
 }
 
 // 書籍と異なり見つからない場合は nil ではなく空文字を返す
-func (vm *ViewMgr) GetViewDef(vname string, tx *tx.Transaction) (string, error) {
+func (vm *ViewManager) GetViewDef(viewName string, tx *tx.Transaction) (string, error) {
 	result := ""
-	layout, err := vm.tblMgr.GetLayout("viewcat", tx)
+	layout, err := vm.tableManager.GetLayout("viewcat", tx)
 	if err != nil {
 		return "", err
 	}
@@ -64,7 +64,7 @@ func (vm *ViewMgr) GetViewDef(vname string, tx *tx.Transaction) (string, error) 
 		if err != nil {
 			return "", err
 		}
-		if viewname == vname {
+		if viewname == viewName {
 			result, err = ts.GetString("viewdef")
 			if err != nil {
 				return "", err
