@@ -40,14 +40,18 @@ func (tm *TableMgr) CreateTable(tblname string, schema *record.Schema, tx *tx.Tr
 	if err != nil {
 		return err
 	}
+	defer tcat.Close()
+
 	tcat.Insert()
 	tcat.SetString("tblname", tblname)
 	tcat.SetInt("slotsize", layout.SlotSize())
-	tcat.Close()
+
 	fcat, err := record.NewTableScan(tx, "fldcat", tm.fcatLayout)
 	if err != nil {
 		return err
 	}
+	defer fcat.Close()
+
 	for _, fieldName := range schema.Fields() {
 		fcat.Insert()
 		fcat.SetString("tblname", tblname)
@@ -56,7 +60,6 @@ func (tm *TableMgr) CreateTable(tblname string, schema *record.Schema, tx *tx.Tr
 		fcat.SetInt("length", schema.Length(fieldName))
 		fcat.SetInt("offset", layout.Offset(fieldName))
 	}
-	fcat.Close()
 	return nil
 }
 
@@ -66,6 +69,8 @@ func (tm *TableMgr) GetLayout(tblname string, tx *tx.Transaction) (*record.Layou
 	if err != nil {
 		return nil, err
 	}
+	defer tcat.Close()
+
 	next, err := tcat.Next()
 	if err != nil {
 		return nil, err
@@ -87,13 +92,15 @@ func (tm *TableMgr) GetLayout(tblname string, tx *tx.Transaction) (*record.Layou
 			return nil, err
 		}
 	}
-	tcat.Close()
+
 	schema := record.NewSchema()
 	offsets := make(map[string]int32)
 	fcat, err := record.NewTableScan(tx, "fldcat", tm.fcatLayout)
 	if err != nil {
 		return nil, err
 	}
+	defer fcat.Close()
+
 	next, err = fcat.Next()
 	if err != nil {
 		return nil, err
@@ -128,6 +135,5 @@ func (tm *TableMgr) GetLayout(tblname string, tx *tx.Transaction) (*record.Layou
 			return nil, err
 		}
 	}
-	fcat.Close()
 	return record.NewLayout(schema, offsets, size), nil
 }

@@ -80,6 +80,8 @@ func (sm *StatMgr) refreshStatistics(tx *tx.Transaction) error {
 	if err != nil {
 		return err
 	}
+	defer tcat.Close()
+
 	next, err := tcat.Next()
 	if err != nil {
 		return err
@@ -103,7 +105,6 @@ func (sm *StatMgr) refreshStatistics(tx *tx.Transaction) error {
 			return err
 		}
 	}
-	tcat.Close()
 	return nil
 }
 
@@ -114,6 +115,8 @@ func (sm *StatMgr) calcTableStats(tblname string, layout *record.Layout, tx *tx.
 	if err != nil {
 		return nil, err
 	}
+	defer ts.Close()
+
 	next, err := ts.Next()
 	if err != nil {
 		return nil, err
@@ -126,6 +129,5 @@ func (sm *StatMgr) calcTableStats(tblname string, layout *record.Layout, tx *tx.
 			return nil, err
 		}
 	}
-	ts.Close()
 	return NewStatInfo(numblocks, numRecs), nil
 }

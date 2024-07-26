@@ -87,11 +87,12 @@ func (im *IndexMgr) CreateIndex(idxname string, tblname string, fldname string, 
 	if err != nil {
 		return err
 	}
+	defer ts.Close()
+
 	ts.Insert()
 	ts.SetString("indexname", idxname)
 	ts.SetString("tablename", tblname)
 	ts.SetString("fieldname", fldname)
-	ts.Close()
 	return nil
 }
 
@@ -101,6 +102,7 @@ func (im *IndexMgr) GetIndexInfo(tblname string, tx *tx.Transaction) (map[string
 	if err != nil {
 		return nil, err
 	}
+	defer ts.Close()
 	next, err := ts.Next()
 	if err != nil {
 		return nil, err
@@ -135,6 +137,5 @@ func (im *IndexMgr) GetIndexInfo(tblname string, tx *tx.Transaction) (map[string
 			return nil, err
 		}
 	}
-	ts.Close()
 	return result, nil
 }
