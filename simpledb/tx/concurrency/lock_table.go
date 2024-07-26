@@ -15,16 +15,18 @@ var ErrTimeout = fmt.Errorf("timeout error")
 type LockTable struct {
 	locks map[file.BlockID]int
 	mux   *sync.Mutex
+	cond  *sync.Cond
 }
 
 func newLockTable() *LockTable {
+	mux := &sync.Mutex{}
 	return &LockTable{
 		locks: make(map[file.BlockID]int),
-		mux:   &sync.Mutex{},
+		mux:   mux,
+		cond:  sync.NewCond(mux),
 	}
 }
 
-// TODO: time.Sleepを消してかっこいい方法で実装する
 func (l *LockTable) SLock(blockID file.BlockID) error {
 	l.mux.Lock()
 	defer l.mux.Unlock()
@@ -39,7 +41,7 @@ func (l *LockTable) SLock(blockID file.BlockID) error {
 				goto notlocked
 			}
 		}
-		time.Sleep(1 * time.Millisecond)
+		l.cond.Wait()
 	}
 notlocked:
 
@@ -61,7 +63,7 @@ func (l *LockTable) XLock(blockID file.BlockID) error {
 				goto notlocked
 			}
 		}
-		time.Sleep(1 * time.Millisecond)
+		l.cond.Wait()
 	}
 notlocked:
 
@@ -77,7 +79,7 @@ func (l *LockTable) Unlock(blockID file.BlockID) {
 		l.locks[blockID]--
 	} else {
 		delete(l.locks, blockID)
-		// TODO notifyAll()
+		l.cond.Broadcast()
 	}
 }
 
