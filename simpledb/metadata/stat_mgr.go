@@ -72,11 +72,11 @@ func (sm *StatManager) GetStatInfo(tableName string, layout *record.Layout, tx *
 func (sm *StatManager) refreshStatistics(tx *tx.Transaction) error {
 	sm.tableStats = make(map[string]*StatInfo)
 	sm.numCalls = 0
-	tableCatalogLayout, err := sm.tableManager.GetLayout("tblcat", tx)
+	tableCatalogLayout, err := sm.tableManager.GetLayout(tableCatalogTableName, tx)
 	if err != nil {
 		return err
 	}
-	tableCatalog, err := record.NewTableScan(tx, "tblcat", tableCatalogLayout)
+	tableCatalog, err := record.NewTableScan(tx, tableCatalogTableName, tableCatalogLayout)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (sm *StatManager) refreshStatistics(tx *tx.Transaction) error {
 		return err
 	}
 	for next {
-		tableName, err := tableCatalog.GetString("tblname")
+		tableName, err := tableCatalog.GetString(tableCatalogFieldTableName)
 		if err != nil {
 			return err
 		}

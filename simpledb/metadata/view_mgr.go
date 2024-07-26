@@ -6,6 +6,9 @@ import (
 )
 
 const maxViewDef = 100
+const viewCatalogTableName = "viewcat"
+const viewCatalogFieldViewName = "viewname"
+const viewCatalogFieldViewDef = "viewdef"
 
 type ViewManager struct {
 	tableManager *TableManager
@@ -15,9 +18,9 @@ func NewViewManager(isNew bool, tableManager *TableManager, tx *tx.Transaction) 
 	viewManager := &ViewManager{tableManager}
 	if isNew {
 		schema := record.NewSchema()
-		schema.AddStringField("viewname", MaxName)
-		schema.AddStringField("viewdef", maxViewDef)
-		err := tableManager.CreateTable("viewcat", schema, tx)
+		schema.AddStringField(viewCatalogFieldViewName, MaxName)
+		schema.AddStringField(viewCatalogFieldViewDef, maxViewDef)
+		err := tableManager.CreateTable(viewCatalogTableName, schema, tx)
 		if err != nil {
 			return nil, err
 		}
@@ -26,30 +29,30 @@ func NewViewManager(isNew bool, tableManager *TableManager, tx *tx.Transaction) 
 }
 
 func (vm *ViewManager) CreateView(viewName string, viewDef string, tx *tx.Transaction) error {
-	layout, err := vm.tableManager.GetLayout("viewcat", tx)
+	layout, err := vm.tableManager.GetLayout(viewCatalogTableName, tx)
 	if err != nil {
 		return err
 	}
-	ts, err := record.NewTableScan(tx, "viewcat", layout)
+	ts, err := record.NewTableScan(tx, viewCatalogTableName, layout)
 	if err != nil {
 		return err
 	}
 	defer ts.Close()
 
 	ts.Insert() // 書籍の方に記載されておらず罠
-	ts.SetString("viewname", viewName)
-	ts.SetString("viewdef", viewDef)
+	ts.SetString(viewCatalogFieldViewName, viewName)
+	ts.SetString(viewCatalogFieldViewDef, viewDef)
 	return nil
 }
 
 // 書籍と異なり見つからない場合は nil ではなく空文字を返す
 func (vm *ViewManager) GetViewDef(viewName string, tx *tx.Transaction) (string, error) {
 	result := ""
-	layout, err := vm.tableManager.GetLayout("viewcat", tx)
+	layout, err := vm.tableManager.GetLayout(viewCatalogTableName, tx)
 	if err != nil {
 		return "", err
 	}
-	ts, err := record.NewTableScan(tx, "viewcat", layout)
+	ts, err := record.NewTableScan(tx, viewCatalogTableName, layout)
 	if err != nil {
 		return "", err
 	}
@@ -60,12 +63,12 @@ func (vm *ViewManager) GetViewDef(viewName string, tx *tx.Transaction) (string, 
 		return "", err
 	}
 	for next {
-		viewname, err := ts.GetString("viewname")
+		viewname, err := ts.GetString(viewCatalogFieldViewName)
 		if err != nil {
 			return "", err
 		}
 		if viewname == viewName {
-			result, err = ts.GetString("viewdef")
+			result, err = ts.GetString(viewCatalogFieldViewDef)
 			if err != nil {
 				return "", err
 			}

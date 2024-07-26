@@ -5,6 +5,15 @@ import (
 	"simpledb/tx"
 )
 
+const indexInfoFieldBlock = "block"
+const indexInfoFieldId = "id"
+const indexInfoFieldDataVal = "dataval"
+
+const indexCatalogTableName = "idxcat"
+const indexCatalogFieldIndexName = "indexname"
+const indexCatalogFieldTableName = "tablename"
+const indexCatalogFieldFieldName = "fieldname"
+
 type IndexInfo struct {
 	indexName   string
 	fieldName   string
@@ -47,13 +56,13 @@ func (ii *IndexInfo) DistinctValues(fname string) int {
 
 func (ii *IndexInfo) createIndexLayout() *record.Layout {
 	schema := record.NewSchema()
-	schema.AddIntField("block")
-	schema.AddIntField("id")
+	schema.AddIntField(indexInfoFieldBlock)
+	schema.AddIntField(indexInfoFieldId)
 	if ii.tableSchema.Type(ii.fieldName) == record.INT {
-		schema.AddIntField("dataval")
+		schema.AddIntField(indexInfoFieldDataVal)
 	} else {
 		fldlen := ii.tableSchema.Length(ii.fieldName)
-		schema.AddStringField("dataval", fldlen)
+		schema.AddStringField(indexInfoFieldDataVal, fldlen)
 	}
 	return record.NewLayoutFromSchema(schema)
 }
@@ -67,15 +76,15 @@ type IndexManager struct {
 func NewIndexManager(isNew bool, tableManager *TableManager, statManager *StatManager, tx *tx.Transaction) (*IndexManager, error) {
 	if isNew {
 		schema := record.NewSchema()
-		schema.AddStringField("indexname", MaxName)
-		schema.AddStringField("tablename", MaxName)
-		schema.AddStringField("fieldname", MaxName)
-		err := tableManager.CreateTable("idxcat", schema, tx)
+		schema.AddStringField(indexCatalogFieldIndexName, MaxName)
+		schema.AddStringField(indexCatalogFieldTableName, MaxName)
+		schema.AddStringField(indexCatalogFieldFieldName, MaxName)
+		err := tableManager.CreateTable(indexCatalogTableName, schema, tx)
 		if err != nil {
 			return nil, err
 		}
 	}
-	layout, err := tableManager.GetLayout("idxcat", tx)
+	layout, err := tableManager.GetLayout(indexCatalogTableName, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -83,22 +92,22 @@ func NewIndexManager(isNew bool, tableManager *TableManager, statManager *StatMa
 }
 
 func (im *IndexManager) CreateIndex(indexName string, tableName string, fieldName string, tx *tx.Transaction) error {
-	ts, err := record.NewTableScan(tx, "idxcat", im.layout)
+	ts, err := record.NewTableScan(tx, indexCatalogTableName, im.layout)
 	if err != nil {
 		return err
 	}
 	defer ts.Close()
 
 	ts.Insert()
-	ts.SetString("indexname", indexName)
-	ts.SetString("tablename", tableName)
-	ts.SetString("fieldname", fieldName)
+	ts.SetString(indexCatalogFieldIndexName, indexName)
+	ts.SetString(indexCatalogFieldTableName, tableName)
+	ts.SetString(indexCatalogFieldFieldName, fieldName)
 	return nil
 }
 
 func (im *IndexManager) GetIndexInfo(tableName string, tx *tx.Transaction) (map[string]*IndexInfo, error) {
 	result := make(map[string]*IndexInfo)
-	ts, err := record.NewTableScan(tx, "idxcat", im.layout)
+	ts, err := record.NewTableScan(tx, indexCatalogTableName, im.layout)
 	if err != nil {
 		return nil, err
 	}
@@ -108,16 +117,16 @@ func (im *IndexManager) GetIndexInfo(tableName string, tx *tx.Transaction) (map[
 		return nil, err
 	}
 	for next {
-		tn, err := ts.GetString("tablename")
+		tn, err := ts.GetString(indexCatalogFieldTableName)
 		if err != nil {
 			return nil, err
 		}
 		if tn == tableName {
-			indexName, err := ts.GetString("indexname")
+			indexName, err := ts.GetString(indexCatalogFieldIndexName)
 			if err != nil {
 				return nil, err
 			}
-			fieldName, err := ts.GetString("fieldname")
+			fieldName, err := ts.GetString(indexCatalogFieldFieldName)
 			if err != nil {
 				return nil, err
 			}
