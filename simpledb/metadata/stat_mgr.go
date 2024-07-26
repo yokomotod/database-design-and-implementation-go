@@ -3,6 +3,7 @@ package metadata
 import (
 	"simpledb/record"
 	"simpledb/tx"
+	"sync"
 )
 
 type StatInfo struct {
@@ -30,10 +31,11 @@ type StatMgr struct {
 	tblMgr     *TableMgr
 	tablestats map[string]*StatInfo
 	numcalls   int
+	mux        *sync.Mutex
 }
 
 func NewStatMgr(tblMgr *TableMgr, tx *tx.Transaction) (*StatMgr, error) {
-	statMgr := &StatMgr{tblMgr, nil, 0}
+	statMgr := &StatMgr{tblMgr, nil, 0, &sync.Mutex{}}
 	err := statMgr.refreshStatistics(tx)
 	if err != nil {
 		return nil, err
@@ -42,6 +44,13 @@ func NewStatMgr(tblMgr *TableMgr, tx *tx.Transaction) (*StatMgr, error) {
 }
 
 func (sm *StatMgr) GetStatInfo(tblname string, layout *record.Layout, tx *tx.Transaction) (*StatInfo, error) {
+	// 書籍では refreshStatistics, calcTableStats にも synchronized がついているが
+	// golang でそのまま全てのメソッドでロックを取るとデッドロックになってしまう。
+	// 幸い両メソッドはプライベートであり、コンストラクタと本メソッド以外から呼び
+	// 出される心配はないのでロックは取らない。
+	sm.mux.Lock()
+	defer sm.mux.Unlock()
+
 	sm.numcalls++
 	if sm.numcalls > 100 {
 		err := sm.refreshStatistics(tx)
