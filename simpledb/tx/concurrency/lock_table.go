@@ -14,22 +14,19 @@ var ErrTimeout = fmt.Errorf("timeout error")
 
 type LockTable struct {
 	locks map[file.BlockID]int
-	mux   *sync.Mutex
 	cond  *sync.Cond
 }
 
 func newLockTable() *LockTable {
-	mux := &sync.Mutex{}
 	return &LockTable{
 		locks: make(map[file.BlockID]int),
-		mux:   mux,
-		cond:  sync.NewCond(mux),
+		cond:  sync.NewCond(&sync.Mutex{}),
 	}
 }
 
 func (l *LockTable) SLock(blockID file.BlockID) error {
-	l.mux.Lock()
-	defer l.mux.Unlock()
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
 
 	startTime := time.Now()
 	for {
@@ -46,8 +43,8 @@ func (l *LockTable) SLock(blockID file.BlockID) error {
 }
 
 func (l *LockTable) XLock(blockID file.BlockID) error {
-	l.mux.Lock()
-	defer l.mux.Unlock()
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
 
 	startTime := time.Now()
 	for {
@@ -64,8 +61,8 @@ func (l *LockTable) XLock(blockID file.BlockID) error {
 }
 
 func (l *LockTable) Unlock(blockID file.BlockID) {
-	l.mux.Lock()
-	defer l.mux.Unlock()
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
 
 	if l.locks[blockID] > 1 {
 		l.locks[blockID]--
@@ -86,8 +83,8 @@ func (l *LockTable) hasOtherSLocks(blockID file.BlockID) bool {
 // Java の `wait(MAX_TIME)` 相当を実現するために追加
 func (l *LockTable) waitWithTimeout(timeout time.Duration) {
 	timer := time.AfterFunc(timeout, func() {
-		l.mux.Lock()
-		defer l.mux.Unlock()
+		l.cond.L.Lock()
+		defer l.cond.L.Unlock()
 		l.cond.Broadcast()
 	})
 	l.cond.Wait()
