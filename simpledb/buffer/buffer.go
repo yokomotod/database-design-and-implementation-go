@@ -2,6 +2,7 @@ package buffer
 
 import (
 	"errors"
+	"fmt"
 	"simpledb/file"
 )
 
@@ -49,20 +50,28 @@ func (b *Buffer) IsPinned() bool {
 	return b.pins > 0
 }
 
-func (b *Buffer) AssignToBlock(blk file.BlockID) {
+func (b *Buffer) AssignToBlock(blk file.BlockID) error {
 	b.flush()
 	b.block = blk
-	b.fileManager.Read(blk, b.contents)
+	if err := b.fileManager.Read(blk, b.contents); err != nil {
+		return fmt.Errorf("fileManager.Read: %w", err)
+	}
 	b.pins = 0
+
+	return nil
 }
 
-func (b *Buffer) flush() {
+func (b *Buffer) flush() error {
 	if b.txNum <= 0 {
-		return
+		return nil
 	}
 
-	b.fileManager.Write(b.block, b.contents)
+	if err := b.fileManager.Write(b.block, b.contents); err != nil {
+		return fmt.Errorf("fileManager.Write: %w", err)
+	}
 	b.txNum = -1
+
+	return nil
 }
 
 type Manager struct {
@@ -105,7 +114,10 @@ func (bm *Manager) Unpin(buff *Buffer) {
 var ErrBufferAbort = errors.New("buffer abort")
 
 func (bm *Manager) Pin(blk file.BlockID) (*Buffer, error) {
-	buff := bm.tryToPin(blk)
+	buff, err := bm.tryToPin(blk)
+	if err != nil {
+		return nil, fmt.Errorf("bm.tryToPin: %w", err)
+	}
 	if buff == nil {
 		return nil, ErrBufferAbort
 	}
@@ -113,21 +125,23 @@ func (bm *Manager) Pin(blk file.BlockID) (*Buffer, error) {
 	return buff, nil
 }
 
-func (bm *Manager) tryToPin(blk file.BlockID) *Buffer {
+func (bm *Manager) tryToPin(blk file.BlockID) (*Buffer, error) {
 	buff := bm.findExistingBuffer(blk)
 
 	if buff == nil {
 		buff = bm.chooseUnpinnedBuffer()
 		if buff == nil {
-			return nil
+			return nil, nil
 		}
-		buff.AssignToBlock(blk)
+		if err := buff.AssignToBlock(blk); err != nil {
+			return nil, fmt.Errorf("buff.AssignToBlock: %w", err)
+		}
 	}
 	if !buff.IsPinned() {
 		bm.numAvailable--
 	}
 	buff.Pin()
-	return buff
+	return buff, nil
 }
 
 func (bm *Manager) findExistingBuffer(blk file.BlockID) *Buffer {

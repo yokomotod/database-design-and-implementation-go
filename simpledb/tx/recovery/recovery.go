@@ -22,14 +22,16 @@ type Manager struct {
 	txnum       int32
 }
 
-func New(tx Transaction, txnum int32, logMgr *log.Manager, bufMgr *buffer.Manager) *Manager {
-	newStartRecord(txnum).WriteToLog(logMgr)
+func New(tx Transaction, txnum int32, logMgr *log.Manager, bufMgr *buffer.Manager) (*Manager, error) {
+	if _, err := newStartRecord(txnum).WriteToLog(logMgr); err != nil {
+		return nil, err
+	}
 	return &Manager{
 		logMgr:      logMgr,
 		bufferMgr:   bufMgr,
 		transaction: tx,
 		txnum:       txnum,
-	}
+	}, nil
 }
 
 func (m *Manager) Commit() error {
@@ -84,9 +86,15 @@ func (m *Manager) SetString(buf *buffer.Buffer, offset int32, newVal string) (in
 }
 
 func (m *Manager) doRollback() error {
-	it := m.logMgr.Iterator()
+	it, err := m.logMgr.Iterator()
+	if err != nil {
+		return fmt.Errorf("recovery.doRollback: %w", err)
+	}
 	for it.HasNext() {
-		bytes := it.Next()
+		bytes, err := it.Next()
+		if err != nil {
+			return fmt.Errorf("recovery.doRollback: %w", err)
+		}
 		rec, err := NewLogRecord(bytes)
 		if err != nil {
 			return fmt.Errorf("recovery.doRollback for %s: %w", string(bytes), err)
@@ -95,7 +103,9 @@ func (m *Manager) doRollback() error {
 			if rec.Op() == Start {
 				return nil
 			}
-			rec.Undo(m.transaction)
+			if err := rec.Undo(m.transaction); err != nil {
+				return fmt.Errorf("Undo: %w", err)
+			}
 		}
 	}
 	return nil
@@ -103,9 +113,15 @@ func (m *Manager) doRollback() error {
 
 func (m *Manager) doRecover() error {
 	finishedTx := make(map[int32]struct{})
-	it := m.logMgr.Iterator()
+	it, err := m.logMgr.Iterator()
+	if err != nil {
+		return fmt.Errorf("recovery.doRecover: %w", err)
+	}
 	for it.HasNext() {
-		bytes := it.Next()
+		bytes, err := it.Next()
+		if err != nil {
+			return fmt.Errorf("recovery.doRecover: %w", err)
+		}
 		rec, err := NewLogRecord(bytes)
 		if err != nil {
 			return fmt.Errorf("recovery.doRecover for %s: %w", string(bytes), err)
@@ -115,7 +131,9 @@ func (m *Manager) doRecover() error {
 		} else if rec.Op() == Commit || rec.Op() == Rollback {
 			finishedTx[rec.TxNumber()] = struct{}{}
 		} else if _, ok := finishedTx[rec.TxNumber()]; !ok {
-			rec.Undo(m.transaction)
+			if err := rec.Undo(m.transaction); err != nil {
+				return fmt.Errorf("Undo: %w", err)
+			}
 		}
 	}
 	return nil

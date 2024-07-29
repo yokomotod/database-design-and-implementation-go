@@ -3,6 +3,7 @@ package file
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"strings"
@@ -159,7 +160,7 @@ func (fm *Manager) Read(blk BlockID, p *Page) error {
 	}
 
 	_, err = f.Read(p.buffer)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return fmt.Errorf("f.Read: %w", err)
 	}
 

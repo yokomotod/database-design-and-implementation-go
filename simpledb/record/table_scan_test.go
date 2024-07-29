@@ -15,7 +15,10 @@ func TestTableScan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	transaction := simpleDB.NewTx()
+	transaction, err := simpleDB.NewTx()
+	if err != nil {
+		t.Fatalf("failed to create transaction: %v", err)
+	}
 	schema := record.NewSchema()
 	schema.AddIntField("A")
 	schema.AddStringField("B", 9)
@@ -44,7 +47,9 @@ func TestTableScan(t *testing.T) {
 	}
 	fmt.Println("Deleting these records, whose A-values are less than 25.")
 	count := 0
-	tableScan.BeforeFirst()
+	if err := tableScan.BeforeFirst(); err != nil {
+		t.Fatalf("failed to before first: %v", err)
+	}
 	next, err := tableScan.Next()
 	if err != nil {
 		t.Fatalf("failed to get next: %v", err)
@@ -73,7 +78,9 @@ func TestTableScan(t *testing.T) {
 	fmt.Printf("%d values under 25 were deleted\n", count)
 
 	fmt.Println("Here are the remaining records.")
-	tableScan.BeforeFirst()
+	if err := tableScan.BeforeFirst(); err != nil {
+		t.Fatalf("failed to before first: %v", err)
+	}
 	next, err = tableScan.Next()
 	if err != nil {
 		t.Fatalf("failed to get next: %v", err)
@@ -94,5 +101,7 @@ func TestTableScan(t *testing.T) {
 		}
 	}
 	tableScan.Close()
-	transaction.Commit()
+	if err := transaction.Commit(); err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
 }

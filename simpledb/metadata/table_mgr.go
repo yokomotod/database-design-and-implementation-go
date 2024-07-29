@@ -21,7 +21,7 @@ type TableManager struct {
 	fieldCatalogLayout *record.Layout
 }
 
-func NewTableManager(isNew bool, tx *tx.Transaction) *TableManager {
+func NewTableManager(isNew bool, tx *tx.Transaction) (*TableManager, error) {
 	tableCatalogSchema := record.NewSchema()
 	tableCatalogSchema.AddStringField(tableCatalogFieldTableName, MaxName)
 	tableCatalogSchema.AddIntField(tableCatalogFieldSlotSize)
@@ -37,10 +37,14 @@ func NewTableManager(isNew bool, tx *tx.Transaction) *TableManager {
 
 	tableManager := &TableManager{tableCatalogLayout, fieldCatalogLayout}
 	if isNew {
-		tableManager.CreateTable(tableCatalogTableName, tableCatalogSchema, tx)
-		tableManager.CreateTable(fieldCatalogTableName, fieldCatalogSchema, tx)
+		if err := tableManager.CreateTable(tableCatalogTableName, tableCatalogSchema, tx); err != nil {
+			return nil, err
+		}
+		if err := tableManager.CreateTable(fieldCatalogTableName, fieldCatalogSchema, tx); err != nil {
+			return nil, err
+		}
 	}
-	return tableManager
+	return tableManager, nil
 }
 
 func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx *tx.Transaction) error {

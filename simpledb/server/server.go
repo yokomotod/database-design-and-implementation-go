@@ -45,23 +45,30 @@ func NewSimpleDBWithMetadata(dirname string) (*SimpleDB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("SimpleDB: %w", err)
 	}
-	tx := db.NewTx()
+	tx, err := db.NewTx()
+	if err != nil {
+		return nil, fmt.Errorf("db.NewTx: %w", err)
+	}
 	isNew := db.fileManager.IsNew()
 	if isNew {
 		fmt.Println("creating new database")
 	} else {
 		fmt.Println("recovering existing database")
-		tx.Recover()
+		if err := tx.Recover(); err != nil {
+			return nil, fmt.Errorf("tx.Recover: %w", err)
+		}
 	}
 	db.metadataManager, err = metadata.NewManager(isNew, tx)
 	if err != nil {
 		return nil, fmt.Errorf("metadata.NewManager: %w", err)
 	}
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("tx.Commit: %w", err)
+	}
 	return db, nil
 }
 
-func (db *SimpleDB) NewTx() *tx.Transaction {
+func (db *SimpleDB) NewTx() (*tx.Transaction, error) {
 	return tx.New(
 		db.fileManager,
 		db.logManager,

@@ -15,7 +15,10 @@ func TestMetadataManager(t *testing.T) {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
 	mdm := simpleDB.MetadataManager()
-	tx := simpleDB.NewTx()
+	tx, err := simpleDB.NewTx()
+	if err != nil {
+		t.Fatalf("failed to create transaction: %v", err)
+	}
 
 	schema := record.NewSchema()
 	schema.AddIntField("A")
@@ -110,5 +113,7 @@ func TestMetadataManager(t *testing.T) {
 	fmt.Printf("V(indexB,A) = %d\n", ii.DistinctValues("A"))
 	fmt.Printf("V(indexB,B) = %d\n", ii.DistinctValues("B"))
 
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
 }

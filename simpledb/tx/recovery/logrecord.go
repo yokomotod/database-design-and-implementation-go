@@ -21,7 +21,7 @@ const (
 type LogRecord interface {
 	Op() LogRecordType
 	TxNumber() int32
-	Undo(tx Transaction)
+	Undo(tx Transaction) error
 }
 
 func NewLogRecord(bytes []byte) (LogRecord, error) {
@@ -62,7 +62,9 @@ func (r *checkPointRecord) String() string {
 	return "<CHECKPOINT>"
 }
 
-func (r *checkPointRecord) Undo(tx Transaction) {}
+func (r *checkPointRecord) Undo(tx Transaction) error {
+	return nil
+}
 
 func (r *checkPointRecord) WriteToLog(lm *log.Manager) (int32, error) {
 	tpos := file.Int32Bytes
@@ -99,7 +101,9 @@ func (r *startRecord) String() string {
 	return fmt.Sprintf("<START %d>", r.txnum)
 }
 
-func (r *startRecord) Undo(tx Transaction) {}
+func (r *startRecord) Undo(tx Transaction) error {
+	return nil
+}
 
 func (r *startRecord) WriteToLog(lm *log.Manager) (int32, error) {
 	tpos := file.Int32Bytes
@@ -138,7 +142,9 @@ func (r *commitRecord) String() string {
 	return fmt.Sprintf("<COMMIT %d>", r.txnum)
 }
 
-func (r *commitRecord) Undo(tx Transaction) {}
+func (r *commitRecord) Undo(tx Transaction) error {
+	return nil
+}
 
 func (r *commitRecord) WriteToLog(lm *log.Manager) (int32, error) {
 	tpos := file.Int32Bytes
@@ -177,7 +183,9 @@ func (r *rollbackRecord) String() string {
 	return fmt.Sprintf("<ROLLBACK %d>", r.txnum)
 }
 
-func (r *rollbackRecord) Undo(tx Transaction) {}
+func (r *rollbackRecord) Undo(tx Transaction) error {
+	return nil
+}
 
 func (r *rollbackRecord) WriteToLog(lm *log.Manager) (int32, error) {
 	tpos := file.Int32Bytes
@@ -237,10 +245,16 @@ func (r *setIntRecord) String() string {
 	return fmt.Sprintf("<SETINT %d %v %d %d>", r.txnum, r.blk, r.offset, r.val)
 }
 
-func (r *setIntRecord) Undo(tx Transaction) {
-	tx.Pin(r.blk)
-	tx.SetInt(r.blk, r.offset, r.val, false)
+func (r *setIntRecord) Undo(tx Transaction) error {
+	if err := tx.Pin(r.blk); err != nil {
+		return fmt.Errorf("Pin: %w", err)
+	}
+	if err := tx.SetInt(r.blk, r.offset, r.val, false); err != nil {
+		return fmt.Errorf("SetInt: %w", err)
+	}
 	tx.Unpin(r.blk)
+
+	return nil
 }
 
 func (r *setIntRecord) WriteToLog(lm *log.Manager) (int32, error) {
@@ -306,10 +320,16 @@ func (r *setStringRecord) TxNumber() int32 {
 	return r.txnum
 }
 
-func (r *setStringRecord) Undo(tx Transaction) {
-	tx.Pin(r.blk)
-	tx.SetString(r.blk, r.offset, r.val, false)
+func (r *setStringRecord) Undo(tx Transaction) error {
+	if err := tx.Pin(r.blk); err != nil {
+		return fmt.Errorf("Pin: %w", err)
+	}
+	if err := tx.SetString(r.blk, r.offset, r.val, false); err != nil {
+		return fmt.Errorf("SetString: %w", err)
+	}
 	tx.Unpin(r.blk)
+
+	return nil
 }
 
 func (r *setStringRecord) String() string {

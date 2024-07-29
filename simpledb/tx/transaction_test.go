@@ -19,7 +19,10 @@ func TestTransaction(t *testing.T) {
 	lm := db.LogManager()
 	bm := db.BufferManager()
 
-	tx1 := tx.New(fm, lm, bm)
+	tx1, err := tx.New(fm, lm, bm)
+	if err != nil {
+		t.Fatal(err)
+	}
 	blk := file.NewBlockID("testfile", 1)
 	if err := tx1.Pin(blk); err != nil {
 		t.Fatal(err)
@@ -32,9 +35,14 @@ func TestTransaction(t *testing.T) {
 	if err := tx1.SetString(blk, 40, "one", false); err != nil {
 		t.Fatal(err)
 	}
-	tx1.Commit()
+	if err := tx1.Commit(); err != nil {
+		t.Fatal(err)
+	}
 
-	tx2 := tx.New(fm, lm, bm)
+	tx2, err := tx.New(fm, lm, bm)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := tx2.Pin(blk); err != nil {
 		t.Fatal(err)
 	}
@@ -62,9 +70,14 @@ func TestTransaction(t *testing.T) {
 	if err := tx2.SetString(blk, 40, newsval, true); err != nil {
 		t.Fatal(err)
 	}
-	tx2.Commit()
+	if err := tx2.Commit(); err != nil {
+		t.Fatal(err)
+	}
 
-	tx3 := tx.New(fm, lm, bm)
+	tx3, err := tx.New(fm, lm, bm)
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = tx3.Pin(blk)
 	if err != nil {
 		t.Fatal(err)
@@ -96,9 +109,14 @@ func TestTransaction(t *testing.T) {
 		t.Fatalf("expected 9999, got %d", ival)
 	}
 	t.Logf("pre-rollback value at location 80 = %d\n", ival)
-	tx3.Rollback()
+	if err := tx3.Rollback(); err != nil {
+		t.Fatal(err)
+	}
 
-	tx4 := tx.New(fm, lm, bm)
+	tx4, err := tx.New(fm, lm, bm)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := tx4.Pin(blk); err != nil {
 		t.Fatal(err)
 	}
@@ -110,5 +128,7 @@ func TestTransaction(t *testing.T) {
 		t.Fatalf("expected 2, got %d", ival)
 	}
 	t.Logf("pre-recover value at location 80 = %d\n", ival)
-	tx4.Commit()
+	if err := tx4.Commit(); err != nil {
+		t.Fatal(err)
+	}
 }

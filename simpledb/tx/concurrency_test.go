@@ -30,10 +30,13 @@ func TestConcurrency(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		txA := tx.New(fm, lm, bm)
+		txA, err := tx.New(fm, lm, bm)
+		if err != nil {
+			panic(err)
+		}
 		blk1 := file.NewBlockID("testfile", 1)
 		blk2 := file.NewBlockID("testfile", 2)
-		err := txA.Pin(blk1)
+		err = txA.Pin(blk1)
 		if err != nil {
 			panic(err)
 		}
@@ -45,7 +48,9 @@ func TestConcurrency(t *testing.T) {
 		_, err = txA.GetInt(blk1, 0)
 		if err != nil {
 			t.Logf("Tx A: %v, rollback", err)
-			txA.Rollback()
+			if err := txA.Rollback(); err != nil {
+				panic(err)
+			}
 			return
 		}
 		t.Log("Tx A: receive slock 1")
@@ -55,21 +60,28 @@ func TestConcurrency(t *testing.T) {
 		_, err = txA.GetInt(blk2, 0)
 		if err != nil {
 			t.Logf("Tx A: %v, rollback", err)
-			txA.Rollback()
+			if err := txA.Rollback(); err != nil {
+				panic(err)
+			}
 			return
 		}
 		t.Log("Tx A: receive slock 2")
-		txA.Commit()
+		if err := txA.Commit(); err != nil {
+			panic(err)
+		}
 		t.Log("Tx A: commit")
 	}()
 
 	go func() {
 		defer wg.Done()
 
-		txB := tx.New(fm, lm, bm)
+		txB, err := tx.New(fm, lm, bm)
+		if err != nil {
+			panic(err)
+		}
 		blk1 := file.NewBlockID("testfile", 1)
 		blk2 := file.NewBlockID("testfile", 2)
-		err := txB.Pin(blk1)
+		err = txB.Pin(blk1)
 		if err != nil {
 			panic(err)
 		}
@@ -81,7 +93,9 @@ func TestConcurrency(t *testing.T) {
 		err = txB.SetInt(blk2, 0, 0, false)
 		if err != nil {
 			t.Logf("Tx B: %v, rollback", err)
-			txB.Rollback()
+			if err := txB.Rollback(); err != nil {
+				panic(err)
+			}
 			return
 		}
 		t.Log("Tx B: receive xlock 2")
@@ -91,21 +105,28 @@ func TestConcurrency(t *testing.T) {
 		_, err = txB.GetInt(blk1, 0)
 		if err != nil {
 			t.Logf("Tx B: %v, rollback", err)
-			txB.Rollback()
+			if err := txB.Rollback(); err != nil {
+				panic(err)
+			}
 			return
 		}
 		t.Log("Tx B: receive slock 1")
-		txB.Commit()
+		if err := txB.Commit(); err != nil {
+			panic(err)
+		}
 		t.Log("Tx B: commit")
 	}()
 
 	go func() {
 		defer wg.Done()
 
-		txC := tx.New(fm, lm, bm)
+		txC, err := tx.New(fm, lm, bm)
+		if err != nil {
+			panic(err)
+		}
 		blk1 := file.NewBlockID("testfile", 1)
 		blk2 := file.NewBlockID("testfile", 2)
-		err := txC.Pin(blk1)
+		err = txC.Pin(blk1)
 		if err != nil {
 			panic(err)
 		}
@@ -119,7 +140,9 @@ func TestConcurrency(t *testing.T) {
 		err = txC.SetInt(blk1, 0, 0, false)
 		if err != nil {
 			t.Logf("Tx C: %v, rollback", err)
-			txC.Rollback()
+			if err := txC.Rollback(); err != nil {
+				panic(err)
+			}
 			return
 		}
 		t.Log("Tx C: receive xlock 1")
@@ -128,11 +151,15 @@ func TestConcurrency(t *testing.T) {
 		_, err = txC.GetInt(blk2, 0)
 		if err != nil {
 			t.Logf("Tx B: %v, rollback", err)
-			txC.Rollback()
+			if err := txC.Rollback(); err != nil {
+				panic(err)
+			}
 			return
 		}
 		t.Log("Tx C: receive slock 2")
-		txC.Commit()
+		if err := txC.Commit(); err != nil {
+			panic(err)
+		}
 		t.Log("Tx C: commit")
 	}()
 

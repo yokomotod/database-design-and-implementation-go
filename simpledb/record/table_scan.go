@@ -47,18 +47,24 @@ func NewTableScan(tx *tx.Transaction, tableName string, layout *Layout) (*TableS
 		return nil, err
 	}
 	if size == 0 {
-		err = tableScan.moveToNewBlock()
+		if err := tableScan.moveToNewBlock(); err != nil {
+			return nil, err
+		}
 	} else {
-		tableScan.moveToBlock(0)
+		if err := tableScan.moveToBlock(0); err != nil {
+			return nil, err
+		}
 	}
-	if err != nil {
-		return nil, err
-	}
+
 	return tableScan, nil
 }
 
-func (ts *TableScan) BeforeFirst() {
-	ts.moveToBlock(0)
+func (ts *TableScan) BeforeFirst() error {
+	if err := ts.moveToBlock(0); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ts *TableScan) Next() (bool, error) {
@@ -75,7 +81,9 @@ func (ts *TableScan) Next() (bool, error) {
 		if atLastBlock {
 			return false, nil
 		}
-		ts.moveToBlock(ts.rp.Block().Number + 1)
+		if err := ts.moveToBlock(ts.rp.Block().Number + 1); err != nil {
+			return false, err
+		}
 		ts.currentSlot, err = ts.rp.NextAfter(ts.currentSlot)
 		if err != nil {
 			return false, err
@@ -118,12 +126,18 @@ func (ts *TableScan) SetString(fieldName string, val string) error {
 	return ts.rp.SetString(ts.currentSlot, fieldName, val)
 }
 
-func (ts *TableScan) SetVal(fieldName string, val interface{}) {
+func (ts *TableScan) SetVal(fieldName string, val interface{}) error {
 	if ts.layout.Schema().Type(fieldName) == INT {
-		ts.SetInt(fieldName, val.(int32))
+		if err := ts.SetInt(fieldName, val.(int32)); err != nil {
+			return err
+		}
 	} else {
-		ts.SetString(fieldName, val.(string))
+		if err := ts.SetString(fieldName, val.(string)); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func (ts *TableScan) Insert() error {
@@ -138,13 +152,15 @@ func (ts *TableScan) Insert() error {
 			return err
 		}
 		if atLastBlock {
-			err = ts.moveToNewBlock()
+			if err := ts.moveToNewBlock(); err != nil {
+				return err
+			}
 		} else {
-			ts.moveToBlock(ts.rp.Block().Number + 1)
+			if err := ts.moveToBlock(ts.rp.Block().Number + 1); err != nil {
+				return err
+			}
 		}
-		if err != nil {
-			return err
-		}
+
 		nextSlot, err = ts.rp.InsertAfter(ts.currentSlot)
 		if err != nil {
 			return err
@@ -158,18 +174,28 @@ func (ts *TableScan) Delete() error {
 	return ts.rp.Delete(ts.currentSlot)
 }
 
-func (ts *TableScan) MoveToRID(rid *RID) {
+func (ts *TableScan) MoveToRID(rid *RID) (err error) {
 	ts.Close()
 	block := file.NewBlockID(ts.filename, rid.BlockNumber())
-	ts.rp = NewRecordPage(ts.tx, block, ts.layout)
+	ts.rp, err = NewRecordPage(ts.tx, block, ts.layout)
+	if err != nil {
+		return err
+	}
 	ts.currentSlot = rid.Slot()
+
+	return nil
 }
 
-func (ts *TableScan) moveToBlock(blockNum int32) {
+func (ts *TableScan) moveToBlock(blockNum int32) (err error) {
 	ts.Close()
 	block := file.NewBlockID(ts.filename, blockNum)
-	ts.rp = NewRecordPage(ts.tx, block, ts.layout)
+	ts.rp, err = NewRecordPage(ts.tx, block, ts.layout)
+	if err != nil {
+		return err
+	}
 	ts.currentSlot = -1
+
+	return nil
 }
 
 func (ts *TableScan) GetRID() *RID {
@@ -182,7 +208,10 @@ func (ts *TableScan) moveToNewBlock() error {
 	if err != nil {
 		return err
 	}
-	ts.rp = NewRecordPage(ts.tx, blockId, ts.layout)
+	ts.rp, err = NewRecordPage(ts.tx, blockId, ts.layout)
+	if err != nil {
+		return err
+	}
 	err = ts.rp.Format()
 	if err != nil {
 		return err
