@@ -84,7 +84,9 @@ func (rp *RecordPage) InsertAfter(slot int32) (int32, error) {
 		return 0, err
 	}
 	if newSlot >= 0 {
-		rp.setFlag(newSlot, Used)
+		if err := rp.setFlag(newSlot, Used); err != nil {
+			return 0, err
+		}
 	}
 	return newSlot, nil
 }

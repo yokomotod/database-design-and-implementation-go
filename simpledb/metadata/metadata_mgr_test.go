@@ -27,6 +27,9 @@ func TestMetadataManager(t *testing.T) {
 		t.Fatalf("failed to create MyTable: %v", err)
 	}
 	layout, err := mdm.GetLayout("MyTable", tx)
+	if err != nil {
+		t.Fatalf("failed to get layout: %v", err)
+	}
 	size := layout.SlotSize()
 	schema2 := layout.Schema()
 	fmt.Printf("MyTable has slot size %d\n", size)
@@ -48,10 +51,16 @@ func TestMetadataManager(t *testing.T) {
 		t.Fatalf("failed to create table scan: %v", err)
 	}
 	for i := 0; i < 50; i++ {
-		tableScan.Insert()
+		if err := tableScan.Insert(); err != nil {
+			t.Fatalf("failed to insert: %v", err)
+		}
 		n := rand.Int31n(50)
-		tableScan.SetInt("A", n)
-		tableScan.SetString("B", fmt.Sprintf("rec%d", n))
+		if err := tableScan.SetInt("A", n); err != nil {
+			t.Fatalf("failed to set int: %v", err)
+		}
+		if err := tableScan.SetString("B", fmt.Sprintf("rec%d", n)); err != nil {
+			t.Fatalf("failed to set string: %v", err)
+		}
 	}
 	si, err := mdm.GetStatInfo("MyTable", layout, tx)
 	if err != nil {

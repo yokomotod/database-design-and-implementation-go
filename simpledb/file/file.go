@@ -199,8 +199,14 @@ func (fm *Manager) Append(filename string) (BlockID, error) {
 		return BlockID{}, fmt.Errorf("fm.openFile: %w", err)
 	}
 
-	f.Seek(int64(blk.Number)*int64(fm.blockSize), 0)
-	f.Write(b)
+	_, err = f.Seek(int64(blk.Number)*int64(fm.blockSize), 0)
+	if err != nil {
+		return BlockID{}, fmt.Errorf("f.Seek: %w", err)
+	}
+	_, err = f.Write(b)
+	if err != nil {
+		return BlockID{}, fmt.Errorf("f.Write: %w", err)
+	}
 
 	return blk, nil
 }

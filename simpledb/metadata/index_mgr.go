@@ -98,10 +98,18 @@ func (im *IndexManager) CreateIndex(indexName string, tableName string, fieldNam
 	}
 	defer ts.Close()
 
-	ts.Insert()
-	ts.SetString(indexCatalogFieldIndexName, indexName)
-	ts.SetString(indexCatalogFieldTableName, tableName)
-	ts.SetString(indexCatalogFieldFieldName, fieldName)
+	if err := ts.Insert(); err != nil {
+		return err
+	}
+	if err := ts.SetString(indexCatalogFieldIndexName, indexName); err != nil {
+		return err
+	}
+	if err := ts.SetString(indexCatalogFieldTableName, tableName); err != nil {
+		return err
+	}
+	if err := ts.SetString(indexCatalogFieldFieldName, fieldName); err != nil {
+		return err
+	}
 	return nil
 }
 

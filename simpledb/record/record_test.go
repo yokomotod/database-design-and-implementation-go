@@ -31,10 +31,11 @@ func TestRecord(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to append block: %v", err)
 	}
-	tx.Pin(blk)
+	if err := tx.Pin(blk); err != nil {
+		t.Fatalf("Failed to pin block: %v", err)
+	}
 	recordPage := record.NewRecordPage(tx, blk, layout)
-	err = recordPage.Format()
-	if err != nil {
+	if err = recordPage.Format(); err != nil {
 		t.Fatalf("Failed to format record page: %v", err)
 	}
 

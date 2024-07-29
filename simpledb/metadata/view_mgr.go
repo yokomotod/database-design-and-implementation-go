@@ -39,9 +39,15 @@ func (vm *ViewManager) CreateView(viewName string, viewDef string, tx *tx.Transa
 	}
 	defer ts.Close()
 
-	ts.Insert() // 書籍の方に記載されておらず罠
-	ts.SetString(viewCatalogFieldViewName, viewName)
-	ts.SetString(viewCatalogFieldViewDef, viewDef)
+	if err := ts.Insert(); err != nil { // 書籍の方に記載されておらず罠
+		return err
+	}
+	if err := ts.SetString(viewCatalogFieldViewName, viewName); err != nil {
+		return err
+	}
+	if err := ts.SetString(viewCatalogFieldViewDef, viewDef); err != nil {
+		return err
+	}
 	return nil
 }
 

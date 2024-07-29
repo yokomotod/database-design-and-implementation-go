@@ -130,13 +130,17 @@ func (tx *Transaction) SetString(blk file.BlockID, offset int32, val string, okT
 
 func (tx *Transaction) Size(filename string) (int32, error) {
 	dummyblk := file.NewBlockID(filename, endOfFile)
-	tx.concurMgr.SLock(dummyblk)
+	if err := tx.concurMgr.SLock(dummyblk); err != nil {
+		return 0, err
+	}
 	return tx.fm.Length(filename)
 }
 
 func (tx *Transaction) Append(filename string) (file.BlockID, error) {
 	dummyblk := file.NewBlockID(filename, endOfFile)
-	tx.concurMgr.XLock(dummyblk)
+	if err := tx.concurMgr.XLock(dummyblk); err != nil {
+		return file.BlockID{}, err
+	}
 	return tx.fm.Append(filename)
 }
 

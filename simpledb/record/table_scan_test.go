@@ -30,10 +30,16 @@ func TestTableScan(t *testing.T) {
 		t.Fatalf("failed to create table scan: %v", err)
 	}
 	for i := 0; i < 50; i++ {
-		tableScan.Insert()
+		if err := tableScan.Insert(); err != nil {
+			t.Fatalf("failed to insert: %v", err)
+		}
 		n := rand.Int31n(50)
-		tableScan.SetInt("A", n)
-		tableScan.SetString("B", fmt.Sprintf("rec%d", n))
+		if err := tableScan.SetInt("A", n); err != nil {
+			t.Fatalf("failed to set int: %v", err)
+		}
+		if err := tableScan.SetString("B", fmt.Sprintf("rec%d", n)); err != nil {
+			t.Fatalf("failed to set string: %v", err)
+		}
 		fmt.Printf("inserting record into slot %s: {%d, %s}\n", tableScan.GetRID().String(), n, fmt.Sprintf("rec%d", n))
 	}
 	fmt.Println("Deleting these records, whose A-values are less than 25.")
@@ -55,7 +61,9 @@ func TestTableScan(t *testing.T) {
 		if a < 25 {
 			count++
 			fmt.Printf("deleting record from slot %s: {%d, %s}\n", tableScan.GetRID().String(), a, b)
-			tableScan.Delete()
+			if err := tableScan.Delete(); err != nil {
+				t.Fatalf("failed to delete: %v", err)
+			}
 		}
 		next, err = tableScan.Next()
 		if err != nil {

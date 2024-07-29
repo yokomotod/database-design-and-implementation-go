@@ -85,7 +85,9 @@ func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
 		}
 	} else {
 		lm.currentBlk = file.NewBlockID(logFile, logSize-1)
-		fileManager.Read(lm.currentBlk, logPage)
+		if err := fileManager.Read(lm.currentBlk, logPage); err != nil {
+			return nil, fmt.Errorf("fileManager.Read: %w", err)
+		}
 	}
 
 	return lm, nil
@@ -98,7 +100,9 @@ func (lm *Manager) appendNewBlock() (file.BlockID, error) {
 	}
 
 	lm.logPage.SetInt(0, int32(lm.fileManager.BlockSize()))
-	lm.fileManager.Write(blk, lm.logPage)
+	if err := lm.fileManager.Write(blk, lm.logPage); err != nil {
+		return file.BlockID{}, fmt.Errorf("fileManager.Write: %w", err)
+	}
 
 	return blk, nil
 }
