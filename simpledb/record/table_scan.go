@@ -39,7 +39,6 @@ type TableScan struct {
 	currentSlot int32
 }
 
-// 本当はUpdateScanのインターフェースを満たすべきだが、UpdateScanのメソッドは未実装なので今は無視
 func NewTableScan(tx *tx.Transaction, tableName string, layout *Layout) (*TableScan, error) {
 	tableScan := &TableScan{tx, layout, nil, tableName + ".tbl", -1}
 	size, err := tx.Size(tableScan.filename)
@@ -99,11 +98,19 @@ func (ts *TableScan) GetString(fieldName string) (string, error) {
 	return ts.rp.GetString(ts.currentSlot, fieldName)
 }
 
-func (ts *TableScan) GetVal(fieldName string) (interface{}, error) {
+func (ts *TableScan) GetVal(fieldName string) (*Constant, error) {
 	if ts.layout.Schema().Type(fieldName) == INT {
-		return ts.GetInt(fieldName)
+		val, err := ts.GetInt(fieldName)
+		if err != nil {
+			return nil, err
+		}
+		return NewConstantWithInt(val), nil
 	} else {
-		return ts.GetString(fieldName)
+		val, err := ts.GetString(fieldName)
+		if err != nil {
+			return nil, err
+		}
+		return NewConstantWithString(val), nil
 	}
 }
 
@@ -125,17 +132,16 @@ func (ts *TableScan) SetString(fieldName string, val string) error {
 	return ts.rp.SetString(ts.currentSlot, fieldName, val)
 }
 
-func (ts *TableScan) SetVal(fieldName string, val interface{}) error {
+func (ts *TableScan) SetVal(fieldName string, val *Constant) error {
 	if ts.layout.Schema().Type(fieldName) == INT {
-		if err := ts.SetInt(fieldName, val.(int32)); err != nil {
+		if err := ts.SetInt(fieldName, val.AsInt()); err != nil {
 			return err
 		}
 	} else {
-		if err := ts.SetString(fieldName, val.(string)); err != nil {
+		if err := ts.SetString(fieldName, val.AsString()); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
