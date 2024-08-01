@@ -30,9 +30,12 @@ func TestConcurrencySLockTimeout(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		txA := tx.New(fm, lm, bm)
+		txA, err := tx.New(fm, lm, bm)
+		if err != nil {
+			panic(err)
+		}
 		blk1 := file.NewBlockID("testfile", 1)
-		err := txA.Pin(blk1)
+		err = txA.Pin(blk1)
 		if err != nil {
 			panic(err)
 		}
@@ -40,13 +43,17 @@ func TestConcurrencySLockTimeout(t *testing.T) {
 		_, err = txA.GetInt(blk1, 0)
 		if err != nil {
 			t.Logf("Tx A: %v, rollback", err)
-			txA.Rollback()
+			if err := txA.Rollback(); err != nil {
+				panic(err)
+			}
 			return
 		}
 		t.Log("Tx A: receive slock 1")
 		time.Sleep(12 * time.Second)
 
-		txA.Commit()
+		if err := txA.Commit(); err != nil {
+			panic(err)
+		}
 		t.Log("Tx A: commit")
 	}()
 
@@ -56,9 +63,12 @@ func TestConcurrencySLockTimeout(t *testing.T) {
 		// txA に先にロックをとってもらう
 		time.Sleep(1 * time.Second)
 
-		txB := tx.New(fm, lm, bm)
+		txB, err := tx.New(fm, lm, bm)
+		if err != nil {
+			panic(err)
+		}
 		blk1 := file.NewBlockID("testfile", 1)
-		err := txB.Pin(blk1)
+		err = txB.Pin(blk1)
 		if err != nil {
 			panic(err)
 		}
@@ -67,7 +77,9 @@ func TestConcurrencySLockTimeout(t *testing.T) {
 		if err != nil {
 			// Timeout でこちらの分岐に入ることが期待値
 			t.Logf("Tx B: %v, rollback", err)
-			txB.Rollback()
+			if err := txB.Rollback(); err != nil {
+				panic(err)
+			}
 			return
 		}
 		t.Errorf("Tx B: Does not reach here")
@@ -95,9 +107,12 @@ func TestConcurrencyXLockTimeout(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		txA := tx.New(fm, lm, bm)
+		txA, err := tx.New(fm, lm, bm)
+		if err != nil {
+			panic(err)
+		}
 		blk1 := file.NewBlockID("testfile", 1)
-		err := txA.Pin(blk1)
+		err = txA.Pin(blk1)
 		if err != nil {
 			panic(err)
 		}
@@ -105,13 +120,17 @@ func TestConcurrencyXLockTimeout(t *testing.T) {
 		err = txA.SetInt(blk1, 0, 0, false)
 		if err != nil {
 			t.Logf("Tx A: %v, rollback", err)
-			txA.Rollback()
+			if err := txA.Rollback(); err != nil {
+				panic(err)
+			}
 			return
 		}
 		t.Log("Tx A: receive xlock 1")
 		time.Sleep(12 * time.Second)
 
-		txA.Commit()
+		if err := txA.Commit(); err != nil {
+			panic(err)
+		}
 		t.Log("Tx A: commit")
 	}()
 
@@ -121,9 +140,12 @@ func TestConcurrencyXLockTimeout(t *testing.T) {
 		// txA に先にロックをとってもらう
 		time.Sleep(1 * time.Second)
 
-		txB := tx.New(fm, lm, bm)
+		txB, err := tx.New(fm, lm, bm)
+		if err != nil {
+			panic(err)
+		}
 		blk1 := file.NewBlockID("testfile", 1)
-		err := txB.Pin(blk1)
+		err = txB.Pin(blk1)
 		if err != nil {
 			panic(err)
 		}
@@ -132,7 +154,9 @@ func TestConcurrencyXLockTimeout(t *testing.T) {
 		if err != nil {
 			// Timeout でこちらの分岐に入ることが期待値
 			t.Logf("Tx B: %v, rollback", err)
-			txB.Rollback()
+			if err := txB.Rollback(); err != nil {
+				panic(err)
+			}
 			return
 		}
 		t.Errorf("Tx B: Does not reach here")
