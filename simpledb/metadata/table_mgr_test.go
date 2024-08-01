@@ -14,8 +14,14 @@ func TestTableManager(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	transaction := simpleDB.NewTx()
-	tableManager := metadata.NewTableManager(true, transaction)
+	transaction, err := simpleDB.NewTx()
+	if err != nil {
+		t.Fatalf("failed to create transaction: %v", err)
+	}
+	tableManager, err := metadata.NewTableManager(true, transaction)
+	if err != nil {
+		t.Fatalf("failed to create table manager: %v", err)
+	}
 
 	schema := record.NewSchema()
 	schema.AddIntField("A")
@@ -43,5 +49,7 @@ func TestTableManager(t *testing.T) {
 		}
 		fmt.Printf("%s: %s\n", fieldName, fieldType)
 	}
-	transaction.Commit()
+	if err := transaction.Commit(); err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
 }

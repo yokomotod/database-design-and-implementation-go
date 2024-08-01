@@ -15,7 +15,10 @@ func TestTableScan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	transaction := simpleDB.NewTx()
+	transaction, err := simpleDB.NewTx()
+	if err != nil {
+		t.Fatalf("failed to create transaction: %v", err)
+	}
 	schema := record.NewSchema()
 	schema.AddIntField("A")
 	schema.AddStringField("B", 9)
@@ -30,15 +33,23 @@ func TestTableScan(t *testing.T) {
 		t.Fatalf("failed to create table scan: %v", err)
 	}
 	for i := 0; i < 50; i++ {
-		tableScan.Insert()
+		if err := tableScan.Insert(); err != nil {
+			t.Fatalf("failed to insert: %v", err)
+		}
 		n := rand.Int31n(50)
-		tableScan.SetInt("A", n)
-		tableScan.SetString("B", fmt.Sprintf("rec%d", n))
+		if err := tableScan.SetInt("A", n); err != nil {
+			t.Fatalf("failed to set int: %v", err)
+		}
+		if err := tableScan.SetString("B", fmt.Sprintf("rec%d", n)); err != nil {
+			t.Fatalf("failed to set string: %v", err)
+		}
 		fmt.Printf("inserting record into slot %s: {%d, %s}\n", tableScan.GetRID().String(), n, fmt.Sprintf("rec%d", n))
 	}
 	fmt.Println("Deleting these records, whose A-values are less than 25.")
 	count := 0
-	tableScan.BeforeFirst()
+	if err := tableScan.BeforeFirst(); err != nil {
+		t.Fatalf("failed to before first: %v", err)
+	}
 	next, err := tableScan.Next()
 	if err != nil {
 		t.Fatalf("failed to get next: %v", err)
@@ -55,7 +66,9 @@ func TestTableScan(t *testing.T) {
 		if a < 25 {
 			count++
 			fmt.Printf("deleting record from slot %s: {%d, %s}\n", tableScan.GetRID().String(), a, b)
-			tableScan.Delete()
+			if err := tableScan.Delete(); err != nil {
+				t.Fatalf("failed to delete: %v", err)
+			}
 		}
 		next, err = tableScan.Next()
 		if err != nil {
@@ -65,7 +78,9 @@ func TestTableScan(t *testing.T) {
 	fmt.Printf("%d values under 25 were deleted\n", count)
 
 	fmt.Println("Here are the remaining records.")
-	tableScan.BeforeFirst()
+	if err := tableScan.BeforeFirst(); err != nil {
+		t.Fatalf("failed to before first: %v", err)
+	}
 	next, err = tableScan.Next()
 	if err != nil {
 		t.Fatalf("failed to get next: %v", err)
@@ -86,5 +101,7 @@ func TestTableScan(t *testing.T) {
 		}
 	}
 	tableScan.Close()
-	transaction.Commit()
+	if err := transaction.Commit(); err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
 }

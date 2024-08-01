@@ -21,7 +21,7 @@ type TableManager struct {
 	fieldCatalogLayout *record.Layout
 }
 
-func NewTableManager(isNew bool, tx *tx.Transaction) *TableManager {
+func NewTableManager(isNew bool, tx *tx.Transaction) (*TableManager, error) {
 	tableCatalogSchema := record.NewSchema()
 	tableCatalogSchema.AddStringField(tableCatalogFieldTableName, MaxName)
 	tableCatalogSchema.AddIntField(tableCatalogFieldSlotSize)
@@ -37,10 +37,14 @@ func NewTableManager(isNew bool, tx *tx.Transaction) *TableManager {
 
 	tableManager := &TableManager{tableCatalogLayout, fieldCatalogLayout}
 	if isNew {
-		tableManager.CreateTable(tableCatalogTableName, tableCatalogSchema, tx)
-		tableManager.CreateTable(fieldCatalogTableName, fieldCatalogSchema, tx)
+		if err := tableManager.CreateTable(tableCatalogTableName, tableCatalogSchema, tx); err != nil {
+			return nil, err
+		}
+		if err := tableManager.CreateTable(fieldCatalogTableName, fieldCatalogSchema, tx); err != nil {
+			return nil, err
+		}
 	}
-	return tableManager
+	return tableManager, nil
 }
 
 func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx *tx.Transaction) error {
@@ -51,9 +55,15 @@ func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx 
 	}
 	defer tableCatalog.Close()
 
-	tableCatalog.Insert()
-	tableCatalog.SetString(tableCatalogFieldTableName, tableName)
-	tableCatalog.SetInt(tableCatalogFieldSlotSize, layout.SlotSize())
+	if err := tableCatalog.Insert(); err != nil {
+		return err
+	}
+	if err := tableCatalog.SetString(tableCatalogFieldTableName, tableName); err != nil {
+		return err
+	}
+	if err := tableCatalog.SetInt(tableCatalogFieldSlotSize, layout.SlotSize()); err != nil {
+		return err
+	}
 
 	fieldCatalog, err := record.NewTableScan(tx, fieldCatalogTableName, tm.fieldCatalogLayout)
 	if err != nil {
@@ -62,12 +72,24 @@ func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx 
 	defer fieldCatalog.Close()
 
 	for _, fieldName := range schema.Fields() {
-		fieldCatalog.Insert()
-		fieldCatalog.SetString(fieldCatalogFieldTableName, tableName)
-		fieldCatalog.SetString(fieldCatalogFieldFieldName, fieldName)
-		fieldCatalog.SetInt(fieldCatalogFieldType, int32(schema.Type(fieldName)))
-		fieldCatalog.SetInt(fieldCatalogFieldLength, schema.Length(fieldName))
-		fieldCatalog.SetInt(fieldCatalogFieldOffset, layout.Offset(fieldName))
+		if err := fieldCatalog.Insert(); err != nil {
+			return err
+		}
+		if err := fieldCatalog.SetString(fieldCatalogFieldTableName, tableName); err != nil {
+			return err
+		}
+		if err := fieldCatalog.SetString(fieldCatalogFieldFieldName, fieldName); err != nil {
+			return err
+		}
+		if err := fieldCatalog.SetInt(fieldCatalogFieldType, int32(schema.Type(fieldName))); err != nil {
+			return err
+		}
+		if err := fieldCatalog.SetInt(fieldCatalogFieldLength, schema.Length(fieldName)); err != nil {
+			return err
+		}
+		if err := fieldCatalog.SetInt(fieldCatalogFieldOffset, layout.Offset(fieldName)); err != nil {
+			return err
+		}
 	}
 	return nil
 }

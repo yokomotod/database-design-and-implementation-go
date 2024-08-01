@@ -28,7 +28,7 @@ type Transaction struct {
 	mybuffers   *BufferList
 }
 
-func New(fileMgr *file.Manager, logMgr *log.Manager, bufferManager *buffer.Manager) *Transaction {
+func New(fileMgr *file.Manager, logMgr *log.Manager, bufferManager *buffer.Manager) (*Transaction, error) {
 	tx := &Transaction{
 		concurMgr: concurrency.New(),
 		fm:        fileMgr,
@@ -37,27 +37,43 @@ func New(fileMgr *file.Manager, logMgr *log.Manager, bufferManager *buffer.Manag
 		mybuffers: newBufferList(bufferManager),
 	}
 
-	tx.recoveryMgr = recovery.New(tx, tx.txnum, logMgr, bufferManager)
-	return tx
+	var err error
+	tx.recoveryMgr, err = recovery.New(tx, tx.txnum, logMgr, bufferManager)
+	if err != nil {
+		return nil, err
+	}
+	return tx, nil
 }
 
-func (tx *Transaction) Commit() {
-	tx.recoveryMgr.Commit()
+func (tx *Transaction) Commit() error {
+	if err := tx.recoveryMgr.Commit(); err != nil {
+		return err
+	}
 	tx.concurMgr.Release()
 	tx.mybuffers.unpinAll()
 	fmt.Printf("transaction %d committed\n", tx.txnum)
+
+	return nil
 }
 
-func (tx *Transaction) Rollback() {
-	tx.recoveryMgr.Rollback()
+func (tx *Transaction) Rollback() error {
+	if err := tx.recoveryMgr.Rollback(); err != nil {
+		return err
+	}
 	tx.concurMgr.Release()
 	tx.mybuffers.unpinAll()
 	fmt.Printf("transaction %d rolled back\n", tx.txnum)
+
+	return nil
 }
 
-func (tx *Transaction) Recover() {
+func (tx *Transaction) Recover() error {
 	tx.bm.FlushAll(tx.txnum)
-	tx.recoveryMgr.Recover()
+	if err := tx.recoveryMgr.Recover(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (tx *Transaction) Pin(blk file.BlockID) error {
@@ -130,13 +146,17 @@ func (tx *Transaction) SetString(blk file.BlockID, offset int32, val string, okT
 
 func (tx *Transaction) Size(filename string) (int32, error) {
 	dummyblk := file.NewBlockID(filename, endOfFile)
-	tx.concurMgr.SLock(dummyblk)
+	if err := tx.concurMgr.SLock(dummyblk); err != nil {
+		return 0, err
+	}
 	return tx.fm.Length(filename)
 }
 
 func (tx *Transaction) Append(filename string) (file.BlockID, error) {
 	dummyblk := file.NewBlockID(filename, endOfFile)
-	tx.concurMgr.XLock(dummyblk)
+	if err := tx.concurMgr.XLock(dummyblk); err != nil {
+		return file.BlockID{}, err
+	}
 	return tx.fm.Append(filename)
 }
 

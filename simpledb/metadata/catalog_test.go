@@ -14,8 +14,14 @@ func TestCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	transaction := simpleDB.NewTx()
-	tableManager := metadata.NewTableManager(true, transaction)
+	transaction, err := simpleDB.NewTx()
+	if err != nil {
+		t.Fatalf("failed to create transaction: %v", err)
+	}
+	tableManager, err := metadata.NewTableManager(true, transaction)
+	if err != nil {
+		t.Fatalf("failed to create table manager: %v", err)
+	}
 
 	schema := record.NewSchema()
 	schema.AddIntField("A")
@@ -88,5 +94,7 @@ func TestCatalog(t *testing.T) {
 		}
 	}
 	tableScan.Close()
-	transaction.Commit() // 紙面上だと書かれていないが、ないと実行が終わらないはず
+	if err := transaction.Commit(); err != nil { // 紙面上だと書かれていないが、ないと実行が終わらないはず
+		t.Fatalf("failed to commit: %v", err)
+	}
 }

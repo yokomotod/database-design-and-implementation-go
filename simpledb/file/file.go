@@ -3,6 +3,7 @@ package file
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"strings"
@@ -159,7 +160,7 @@ func (fm *Manager) Read(blk BlockID, p *Page) error {
 	}
 
 	_, err = f.Read(p.buffer)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return fmt.Errorf("f.Read: %w", err)
 	}
 
@@ -199,8 +200,14 @@ func (fm *Manager) Append(filename string) (BlockID, error) {
 		return BlockID{}, fmt.Errorf("fm.openFile: %w", err)
 	}
 
-	f.Seek(int64(blk.Number)*int64(fm.blockSize), 0)
-	f.Write(b)
+	_, err = f.Seek(int64(blk.Number)*int64(fm.blockSize), 0)
+	if err != nil {
+		return BlockID{}, fmt.Errorf("f.Seek: %w", err)
+	}
+	_, err = f.Write(b)
+	if err != nil {
+		return BlockID{}, fmt.Errorf("f.Write: %w", err)
+	}
 
 	return blk, nil
 }

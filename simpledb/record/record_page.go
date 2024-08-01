@@ -18,9 +18,11 @@ type RecordPage struct {
 	layout *Layout
 }
 
-func NewRecordPage(tx *tx.Transaction, blk file.BlockID, layout *Layout) *RecordPage {
-	tx.Pin(blk)
-	return &RecordPage{tx, blk, layout}
+func NewRecordPage(tx *tx.Transaction, blk file.BlockID, layout *Layout) (*RecordPage, error) {
+	if err := tx.Pin(blk); err != nil {
+		return nil, err
+	}
+	return &RecordPage{tx, blk, layout}, nil
 }
 
 func (rp *RecordPage) GetInt(slot int32, fieldName string) (int32, error) {
@@ -84,7 +86,9 @@ func (rp *RecordPage) InsertAfter(slot int32) (int32, error) {
 		return 0, err
 	}
 	if newSlot >= 0 {
-		rp.setFlag(newSlot, Used)
+		if err := rp.setFlag(newSlot, Used); err != nil {
+			return 0, err
+		}
 	}
 	return newSlot, nil
 }

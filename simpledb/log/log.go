@@ -14,7 +14,7 @@ type LogIterator struct {
 	boundary    int32
 }
 
-func NewIterator(fileManager *file.Manager, blk file.BlockID) *LogIterator {
+func NewIterator(fileManager *file.Manager, blk file.BlockID) (*LogIterator, error) {
 	b := make([]byte, fileManager.BlockSize())
 	page := file.NewPageWith(b)
 
@@ -26,31 +26,39 @@ func NewIterator(fileManager *file.Manager, blk file.BlockID) *LogIterator {
 		boundary:    0,
 	}
 
-	it.moveToBlock(blk)
+	if err := it.moveToBlock(blk); err != nil {
+		return nil, fmt.Errorf("it.moveToBlock: %w", err)
+	}
 
-	return it
+	return it, nil
 }
 
-func (it *LogIterator) moveToBlock(blk file.BlockID) {
-	it.fileManager.Read(blk, it.page)
+func (it *LogIterator) moveToBlock(blk file.BlockID) error {
+	if err := it.fileManager.Read(blk, it.page); err != nil {
+		return fmt.Errorf("fileManager.Read: %w", err)
+	}
 	it.boundary = it.page.GetInt(0)
 	it.currentPos = it.boundary
+
+	return nil
 }
 
 func (it *LogIterator) HasNext() bool {
 	return it.currentPos < it.fileManager.BlockSize() || it.blk.Number > 0
 }
 
-func (it *LogIterator) Next() []byte {
+func (it *LogIterator) Next() ([]byte, error) {
 	if it.currentPos == it.fileManager.BlockSize() {
 		it.blk = file.NewBlockID(it.blk.FileName, it.blk.Number-1)
-		it.moveToBlock(it.blk)
+		if err := it.moveToBlock(it.blk); err != nil {
+			return nil, fmt.Errorf("it.moveToBlock: %w", err)
+		}
 	}
 
 	rec := it.page.GetBytes(it.currentPos)
 	it.currentPos += file.Int32Bytes + int32(len(rec))
 
-	return rec
+	return rec, nil
 }
 
 type Manager struct {
@@ -85,7 +93,9 @@ func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
 		}
 	} else {
 		lm.currentBlk = file.NewBlockID(logFile, logSize-1)
-		fileManager.Read(lm.currentBlk, logPage)
+		if err := fileManager.Read(lm.currentBlk, logPage); err != nil {
+			return nil, fmt.Errorf("fileManager.Read: %w", err)
+		}
 	}
 
 	return lm, nil
@@ -98,7 +108,9 @@ func (lm *Manager) appendNewBlock() (file.BlockID, error) {
 	}
 
 	lm.logPage.SetInt(0, int32(lm.fileManager.BlockSize()))
-	lm.fileManager.Write(blk, lm.logPage)
+	if err := lm.fileManager.Write(blk, lm.logPage); err != nil {
+		return file.BlockID{}, fmt.Errorf("fileManager.Write: %w", err)
+	}
 
 	return blk, nil
 }
@@ -111,12 +123,16 @@ func (lm *Manager) Flush(lsn int32) {
 	lm.flush()
 }
 
-func (lm *Manager) flush() {
-	lm.fileManager.Write(lm.currentBlk, lm.logPage)
+func (lm *Manager) flush() error {
+	if err := lm.fileManager.Write(lm.currentBlk, lm.logPage); err != nil {
+		return fmt.Errorf("fileManager.Write: %w", err)
+	}
 	lm.lastSavedLSN = lm.latestLSN
+
+	return nil
 }
 
-func (lm *Manager) Iterator() *LogIterator {
+func (lm *Manager) Iterator() (*LogIterator, error) {
 	lm.flush()
 	return NewIterator(lm.fileManager, lm.currentBlk)
 }

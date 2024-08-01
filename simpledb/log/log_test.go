@@ -45,12 +45,18 @@ func TestLog(t *testing.T) {
 }
 
 func printLogRecords(logManager *log.Manager) string {
-	iter := logManager.Iterator()
+	iter, err := logManager.Iterator()
+	if err != nil {
+		panic(err)
+	}
 
 	res := ""
 	sentinel := 0
 	for iter.HasNext() {
-		rec := iter.Next()
+		rec, err := iter.Next()
+		if err != nil {
+			panic(err)
+		}
 		p := file.NewPageWith(rec)
 		s := p.GetString(0)
 		npos := file.MaxLength(int32(len(s)))

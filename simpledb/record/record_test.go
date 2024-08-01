@@ -13,9 +13,12 @@ func TestRecord(t *testing.T) {
 	t.Parallel()
 	db, err := server.NewSimpleDB(path.Join(t.TempDir(), "recordtest"), 400, 8)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-	tx := db.NewTx()
+	tx, err := db.NewTx()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	schema := record.NewSchema()
 	schema.AddIntField("A")
@@ -31,10 +34,14 @@ func TestRecord(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to append block: %v", err)
 	}
-	tx.Pin(blk)
-	recordPage := record.NewRecordPage(tx, blk, layout)
-	err = recordPage.Format()
+	if err := tx.Pin(blk); err != nil {
+		t.Fatalf("Failed to pin block: %v", err)
+	}
+	recordPage, err := record.NewRecordPage(tx, blk, layout)
 	if err != nil {
+		t.Fatalf("Failed to create record page: %v", err)
+	}
+	if err = recordPage.Format(); err != nil {
 		t.Fatalf("Failed to format record page: %v", err)
 	}
 
@@ -109,5 +116,7 @@ func TestRecord(t *testing.T) {
 		}
 	}
 	tx.Unpin(blk)
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("Failed to commit transaction: %v", err)
+	}
 }

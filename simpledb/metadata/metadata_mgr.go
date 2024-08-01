@@ -13,7 +13,10 @@ type Manager struct {
 }
 
 func NewManager(isNew bool, tx *tx.Transaction) (*Manager, error) {
-	tableManager := NewTableManager(isNew, tx)
+	tableManager, err := NewTableManager(isNew, tx)
+	if err != nil {
+		return nil, err
+	}
 	viewManager, err := NewViewManager(isNew, tableManager, tx)
 	if err != nil {
 		return nil, err
