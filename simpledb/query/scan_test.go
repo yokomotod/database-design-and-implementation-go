@@ -15,7 +15,10 @@ func TestScan1(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	tx := simpleDB.NewTx()
+	tx, err := simpleDB.NewTx()
+	if err != nil {
+		t.Fatalf("failed to create tx: %v", err)
+	}
 
 	schema1 := record.NewSchema()
 	schema1.AddIntField("A")
@@ -87,7 +90,9 @@ func TestScan1(t *testing.T) {
 		}
 	}
 	s4.Close()
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("failed to commit tx: %v", err)
+	}
 }
 
 func TestScan2(t *testing.T) {
@@ -95,7 +100,10 @@ func TestScan2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	tx := simpleDB.NewTx()
+	tx, err := simpleDB.NewTx()
+	if err != nil {
+		t.Fatalf("failed to create tx: %v", err)
+	}
 
 	// create T1
 	schema1 := record.NewSchema()
@@ -208,5 +216,7 @@ func TestScan2(t *testing.T) {
 		}
 	}
 	s5.Close()
-	tx.Commit()
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("failed to commit tx: %v", err)
+	}
 }
