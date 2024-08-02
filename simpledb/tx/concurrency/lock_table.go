@@ -14,70 +14,61 @@ var ErrTimeout = fmt.Errorf("timeout error")
 
 type LockTable struct {
 	locks map[file.BlockID]int
-	mux   *sync.Mutex
+	cond  *sync.Cond
 }
 
 func newLockTable() *LockTable {
 	return &LockTable{
 		locks: make(map[file.BlockID]int),
-		mux:   &sync.Mutex{},
+		cond:  sync.NewCond(&sync.Mutex{}),
 	}
 }
 
-// TODO: time.Sleepを消してかっこいい方法で実装する
 func (l *LockTable) SLock(blockID file.BlockID) error {
-	l.mux.Lock()
-	defer l.mux.Unlock()
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
 
-	timeoutChan := time.After(maxLockTime)
+	startTime := time.Now()
 	for {
-		select {
-		case <-timeoutChan:
+		if time.Since(startTime) > maxLockTime {
 			return ErrTimeout
-		default:
-			if !l.hasXLock(blockID) {
-				goto notlocked
-			}
+		} else if !l.hasXLock(blockID) {
+			break
 		}
-		time.Sleep(1 * time.Millisecond)
+		l.waitWithTimeout(maxLockTime)
 	}
-notlocked:
 
 	l.locks[blockID]++
 	return nil
 }
 
 func (l *LockTable) XLock(blockID file.BlockID) error {
-	l.mux.Lock()
-	defer l.mux.Unlock()
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
 
-	timeoutChan := time.After(maxLockTime)
+	startTime := time.Now()
 	for {
-		select {
-		case <-timeoutChan:
+		if time.Since(startTime) > maxLockTime {
 			return ErrTimeout
-		default:
-			if !l.hasOtherSLocks(blockID) {
-				goto notlocked
-			}
+		} else if !l.hasOtherSLocks(blockID) {
+			break
 		}
-		time.Sleep(1 * time.Millisecond)
+		l.waitWithTimeout(maxLockTime)
 	}
-notlocked:
 
 	l.locks[blockID] = -1
 	return nil
 }
 
 func (l *LockTable) Unlock(blockID file.BlockID) {
-	l.mux.Lock()
-	defer l.mux.Unlock()
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
 
 	if l.locks[blockID] > 1 {
 		l.locks[blockID]--
 	} else {
 		delete(l.locks, blockID)
-		// TODO notifyAll()
+		l.cond.Broadcast()
 	}
 }
 
@@ -87,4 +78,19 @@ func (l *LockTable) hasXLock(blockID file.BlockID) bool {
 
 func (l *LockTable) hasOtherSLocks(blockID file.BlockID) bool {
 	return l.locks[blockID] > 1
+}
+
+// Java の `wait(MAX_TIME)` 相当を実現するために追加
+func (l *LockTable) waitWithTimeout(timeout time.Duration) {
+	timer := time.AfterFunc(timeout, func() {
+		l.cond.L.Lock()
+		defer l.cond.L.Unlock()
+		l.cond.Broadcast()
+	})
+	l.cond.Wait()
+
+	// NOTE: タイミング次第で `Stop()` 呼び出し前にすでに timer が動いてしまう可能性あり
+	// その場合 Broadcast が実行されてしまうが、その際に Wait があってもなくても
+	// 今の処理であればループでロック状態を確認しており特に問題はなさそうに見える
+	timer.Stop()
 }
