@@ -64,11 +64,14 @@ func (vm *ViewManager) GetViewDef(viewName string, tx *tx.Transaction) (string, 
 	}
 	defer ts.Close()
 
-	next, err := ts.Next()
-	if err != nil {
-		return "", err
-	}
-	for next {
+	for {
+		next, err := ts.Next()
+		if err != nil {
+			return "", err
+		}
+		if !next {
+			break
+		}
 		viewname, err := ts.GetString(viewCatalogFieldViewName)
 		if err != nil {
 			return "", err
@@ -79,10 +82,6 @@ func (vm *ViewManager) GetViewDef(viewName string, tx *tx.Transaction) (string, 
 				return "", err
 			}
 			break
-		}
-		next, err = ts.Next()
-		if err != nil {
-			return "", err
 		}
 	}
 	return result, nil

@@ -40,11 +40,14 @@ func TestCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create tblcat table scan: %v", err)
 	}
-	next, err := tableScan.Next()
-	if err != nil {
-		t.Fatalf("failed to get tblcat next: %v", err)
-	}
-	for next {
+	for {
+		next, err := tableScan.Next()
+		if err != nil {
+			t.Fatalf("failed to get tblcat next: %v", err)
+		}
+		if !next {
+			break
+		}
 		tableName, err := tableScan.GetString("tblname")
 		if err != nil {
 			t.Fatalf("failed to get tblname: %v", err)
@@ -54,10 +57,6 @@ func TestCatalog(t *testing.T) {
 			t.Fatalf("failed to get slotsize: %v", err)
 		}
 		fmt.Printf("%s %d\n", tableName, size)
-		next, err = tableScan.Next()
-		if err != nil {
-			t.Fatalf("failed to get tblcat next: %v", err)
-		}
 	}
 	tableScan.Close()
 
@@ -70,11 +69,14 @@ func TestCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create fldcat table scan: %v", err)
 	}
-	next, err = tableScan.Next()
-	if err != nil {
-		t.Fatalf("failed to get fldcat next: %v", err)
-	}
-	for next {
+	for {
+		next, err := tableScan.Next()
+		if err != nil {
+			t.Fatalf("failed to get fldcat next: %v", err)
+		}
+		if !next {
+			break
+		}
 		tableName, err := tableScan.GetString("tblname")
 		if err != nil {
 			t.Fatalf("failed to get tblname: %v", err)
@@ -88,10 +90,6 @@ func TestCatalog(t *testing.T) {
 			t.Fatalf("failed to get offset: %v", err)
 		}
 		fmt.Printf("%s %s %d\n", tableName, fieldName, offset)
-		next, err = tableScan.Next()
-		if err != nil {
-			t.Fatalf("failed to get fldcat next: %v", err)
-		}
 	}
 	tableScan.Close()
 	if err := transaction.Commit(); err != nil { // 紙面上だと書かれていないが、ないと実行が終わらないはず

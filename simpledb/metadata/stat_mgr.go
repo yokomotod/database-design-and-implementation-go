@@ -82,11 +82,14 @@ func (sm *StatManager) refreshStatistics(tx *tx.Transaction) error {
 	}
 	defer tableCatalog.Close()
 
-	next, err := tableCatalog.Next()
-	if err != nil {
-		return err
-	}
-	for next {
+	for {
+		next, err := tableCatalog.Next()
+		if err != nil {
+			return err
+		}
+		if !next {
+			break
+		}
 		tableName, err := tableCatalog.GetString(tableCatalogFieldTableName)
 		if err != nil {
 			return err
@@ -100,10 +103,6 @@ func (sm *StatManager) refreshStatistics(tx *tx.Transaction) error {
 			return err
 		}
 		sm.tableStats[tableName] = si
-		next, err = tableCatalog.Next()
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -117,17 +116,16 @@ func (sm *StatManager) calcTableStats(tableName string, layout *record.Layout, t
 	}
 	defer ts.Close()
 
-	next, err := ts.Next()
-	if err != nil {
-		return nil, err
-	}
-	for next {
-		numRecs++
-		numBlocks = int(ts.GetRID().BlockNumber()) + 1
-		next, err = ts.Next()
+	for {
+		next, err := ts.Next()
 		if err != nil {
 			return nil, err
 		}
+		if !next {
+			break
+		}
+		numRecs++
+		numBlocks = int(ts.GetRID().BlockNumber()) + 1
 	}
 	return NewStatInfo(numBlocks, numRecs), nil
 }
