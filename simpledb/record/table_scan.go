@@ -134,11 +134,19 @@ func (ts *TableScan) SetString(fieldName string, val string) error {
 
 func (ts *TableScan) SetVal(fieldName string, val *Constant) error {
 	if ts.layout.Schema().Type(fieldName) == INT {
-		if err := ts.SetInt(fieldName, val.AsInt()); err != nil {
+		ival, err := val.AsInt()
+		if err != nil {
+			return err
+		}
+		if err := ts.SetInt(fieldName, ival); err != nil {
 			return err
 		}
 	} else {
-		if err := ts.SetString(fieldName, val.AsString()); err != nil {
+		sval, err := val.AsString()
+		if err != nil {
+			return err
+		}
+		if err := ts.SetString(fieldName, sval); err != nil {
 			return err
 		}
 	}
