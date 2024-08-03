@@ -1,6 +1,11 @@
 package query
 
-import "simpledb/record"
+import (
+	"errors"
+	"simpledb/record"
+)
+
+var ErrAmbiguousField = errors.New("ambiguous field")
 
 type ProductScan struct {
 	s1, s2 Scan
@@ -52,6 +57,9 @@ func (ps *ProductScan) Next() (bool, error) {
 }
 
 func (ps *ProductScan) GetInt(fieldName string) (int32, error) {
+	if ps.s1.HasField(fieldName) && ps.s2.HasField(fieldName) {
+		return 0, ErrAmbiguousField
+	}
 	if ps.s1.HasField(fieldName) {
 		return ps.s1.GetInt(fieldName)
 	}
@@ -59,6 +67,9 @@ func (ps *ProductScan) GetInt(fieldName string) (int32, error) {
 }
 
 func (ps *ProductScan) GetString(fieldName string) (string, error) {
+	if ps.s1.HasField(fieldName) && ps.s2.HasField(fieldName) {
+		return "", ErrAmbiguousField
+	}
 	if ps.s1.HasField(fieldName) {
 		return ps.s1.GetString(fieldName)
 	}
@@ -66,6 +77,9 @@ func (ps *ProductScan) GetString(fieldName string) (string, error) {
 }
 
 func (ps *ProductScan) GetVal(fieldName string) (*record.Constant, error) {
+	if ps.s1.HasField(fieldName) && ps.s2.HasField(fieldName) {
+		return nil, ErrAmbiguousField
+	}
 	if ps.s1.HasField(fieldName) {
 		return ps.s1.GetVal(fieldName)
 	}
