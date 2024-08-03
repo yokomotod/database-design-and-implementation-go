@@ -1,10 +1,13 @@
 package record
 
 import (
+	"errors"
 	"fmt"
 	"simpledb/file"
 	"simpledb/tx"
 )
+
+var ErrUnkownFieldType = errors.New("unknown field type")
 
 type RID struct {
 	blockNum int32
@@ -99,18 +102,21 @@ func (ts *TableScan) GetString(fieldName string) (string, error) {
 }
 
 func (ts *TableScan) GetVal(fieldName string) (*Constant, error) {
-	if ts.layout.Schema().Type(fieldName) == INT {
+	switch ts.layout.Schema().Type(fieldName) {
+	case INT:
 		val, err := ts.GetInt(fieldName)
 		if err != nil {
 			return nil, err
 		}
 		return NewConstantWithInt(val), nil
-	} else {
+	case VARCHAR:
 		val, err := ts.GetString(fieldName)
 		if err != nil {
 			return nil, err
 		}
 		return NewConstantWithString(val), nil
+	default:
+		return nil, ErrUnkownFieldType
 	}
 }
 
@@ -133,7 +139,8 @@ func (ts *TableScan) SetString(fieldName string, val string) error {
 }
 
 func (ts *TableScan) SetVal(fieldName string, val *Constant) error {
-	if ts.layout.Schema().Type(fieldName) == INT {
+	switch ts.layout.Schema().Type(fieldName) {
+	case INT:
 		ival, err := val.AsInt()
 		if err != nil {
 			return err
@@ -141,7 +148,7 @@ func (ts *TableScan) SetVal(fieldName string, val *Constant) error {
 		if err := ts.SetInt(fieldName, ival); err != nil {
 			return err
 		}
-	} else {
+	case VARCHAR:
 		sval, err := val.AsString()
 		if err != nil {
 			return err
@@ -149,6 +156,8 @@ func (ts *TableScan) SetVal(fieldName string, val *Constant) error {
 		if err := ts.SetString(fieldName, sval); err != nil {
 			return err
 		}
+	default:
+		return ErrUnkownFieldType
 	}
 	return nil
 }
