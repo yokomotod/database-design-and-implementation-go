@@ -8,14 +8,14 @@ import (
 var ErrFieldNotFound = errors.New("field not found")
 
 type ProjectScan struct {
-	scan      Scan
-	fieldList []string
+	scan   Scan
+	fields []string
 }
 
-func NewProjectScan(scan Scan, fieldList []string) *ProjectScan {
+func NewProjectScan(scan Scan, fields []string) *ProjectScan {
 	return &ProjectScan{
-		scan:      scan,
-		fieldList: fieldList,
+		scan:   scan,
+		fields: fields,
 	}
 }
 
@@ -49,7 +49,7 @@ func (ps *ProjectScan) GetVal(fieldName string) (*record.Constant, error) {
 }
 
 func (ps *ProjectScan) HasField(fieldName string) bool {
-	for _, field := range ps.fieldList {
+	for _, field := range ps.fields {
 		if field == fieldName {
 			return true
 		}
