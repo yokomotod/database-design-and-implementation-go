@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestScan1(t *testing.T) {
+func TestSelectRecords(t *testing.T) {
 	simpleDB, err := server.NewSimpleDBWithMetadata(path.Join(t.TempDir(), "scantest1"))
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
@@ -95,7 +95,7 @@ func TestScan1(t *testing.T) {
 	}
 }
 
-func TestScan2(t *testing.T) {
+func TestJoinAndSelectRecords(t *testing.T) {
 	simpleDB, err := server.NewSimpleDBWithMetadata(path.Join(t.TempDir(), "scantest2"))
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
