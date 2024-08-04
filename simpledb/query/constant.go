@@ -33,8 +33,14 @@ func (c *Constant) AsString() (string, error) {
 
 func (c *Constant) Equals(other *Constant) bool {
 	if c.ival != nil {
+		if other.ival == nil {
+			return false
+		}
 		return *c.ival == *other.ival
 	} else {
+		if other.sval == nil {
+			return false
+		}
 		return *c.sval == *other.sval
 	}
 }
