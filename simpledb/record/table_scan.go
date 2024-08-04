@@ -203,8 +203,8 @@ func (ts *TableScan) moveToBlock(blockNum int32) (err error) {
 	return nil
 }
 
-func (ts *TableScan) GetRID() *RID {
-	return NewRID(ts.rp.Block().Number, ts.currentSlot)
+func (ts *TableScan) GetRID() (*RID, error) {
+	return NewRID(ts.rp.Block().Number, ts.currentSlot), nil
 }
 
 func (ts *TableScan) moveToNewBlock() error {

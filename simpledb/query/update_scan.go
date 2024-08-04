@@ -8,6 +8,6 @@ type UpdateScan interface {
 	SetString(fieldName string, val string) error
 	Insert() error
 	Delete() error
-	GetRID() *record.RID
-	MoveToRID(rid *record.RID)
+	GetRID() (*record.RID, error)
+	MoveToRID(rid *record.RID) error
 }

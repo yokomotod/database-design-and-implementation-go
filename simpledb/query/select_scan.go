@@ -1,6 +1,11 @@
 package query
 
-import "simpledb/record"
+import (
+	"errors"
+	"simpledb/record"
+)
+
+var ErrNotUpdatable = errors.New("scan is not updatable")
 
 type SelectScan struct {
 	scan Scan
@@ -62,36 +67,57 @@ func (ss *SelectScan) Close() {
 
 // Update scan methods
 func (ss *SelectScan) SetInt(fieldName string, val int32) error {
-	us := ss.scan.(UpdateScan)
+	us, ok := ss.scan.(UpdateScan)
+	if !ok {
+		return ErrNotUpdatable
+	}
 	return us.SetInt(fieldName, val)
 }
 
 func (ss *SelectScan) SetString(fieldName string, val string) error {
-	us := ss.scan.(UpdateScan)
+	us, ok := ss.scan.(UpdateScan)
+	if !ok {
+		return ErrNotUpdatable
+	}
 	return us.SetString(fieldName, val)
 }
 
 func (ss *SelectScan) SetVal(fieldName string, val *record.Constant) error {
-	us := ss.scan.(UpdateScan)
+	us, ok := ss.scan.(UpdateScan)
+	if !ok {
+		return ErrNotUpdatable
+	}
 	return us.SetVal(fieldName, val)
 }
 
 func (ss *SelectScan) Insert() error {
-	us := ss.scan.(UpdateScan)
+	us, ok := ss.scan.(UpdateScan)
+	if !ok {
+		return ErrNotUpdatable
+	}
 	return us.Insert()
 }
 
 func (ss *SelectScan) Delete() error {
-	us := ss.scan.(UpdateScan)
+	us, ok := ss.scan.(UpdateScan)
+	if !ok {
+		return ErrNotUpdatable
+	}
 	return us.Delete()
 }
 
-func (ss *SelectScan) GetRID() *record.RID {
-	us := ss.scan.(UpdateScan)
+func (ss *SelectScan) GetRID() (*record.RID, error) {
+	us, ok := ss.scan.(UpdateScan)
+	if !ok {
+		return nil, ErrNotUpdatable
+	}
 	return us.GetRID()
 }
 
-func (ss *SelectScan) MoveToRID(rid *record.RID) {
-	us := ss.scan.(UpdateScan)
-	us.MoveToRID(rid)
+func (ss *SelectScan) MoveToRID(rid *record.RID) error {
+	us, ok := ss.scan.(UpdateScan)
+	if !ok {
+		return ErrNotUpdatable
+	}
+	return us.MoveToRID(rid)
 }

@@ -124,8 +124,13 @@ func (sm *StatManager) calcTableStats(tableName string, layout *record.Layout, t
 		if !next {
 			break
 		}
+
 		numRecs++
-		numBlocks = int(ts.GetRID().BlockNumber()) + 1
+		rid, err := ts.GetRID()
+		if err != nil {
+			return nil, err
+		}
+		numBlocks = int(rid.BlockNumber()) + 1
 	}
 	return NewStatInfo(numBlocks, numRecs), nil
 }
