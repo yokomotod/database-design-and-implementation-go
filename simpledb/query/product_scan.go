@@ -2,7 +2,6 @@ package query
 
 import (
 	"errors"
-	"simpledb/record"
 )
 
 var ErrAmbiguousField = errors.New("ambiguous field")
@@ -76,7 +75,7 @@ func (ps *ProductScan) GetString(fieldName string) (string, error) {
 	return ps.s2.GetString(fieldName)
 }
 
-func (ps *ProductScan) GetVal(fieldName string) (*record.Constant, error) {
+func (ps *ProductScan) GetVal(fieldName string) (*Constant, error) {
 	if ps.s1.HasField(fieldName) && ps.s2.HasField(fieldName) {
 		return nil, ErrAmbiguousField
 	}

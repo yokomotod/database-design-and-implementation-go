@@ -1,9 +1,10 @@
-package record_test
+package query_test
 
 import (
 	"fmt"
 	"math/rand"
 	"path"
+	"simpledb/query"
 	"simpledb/record"
 	"simpledb/server"
 	"testing"
@@ -28,7 +29,7 @@ func TestTableScan(t *testing.T) {
 		fmt.Printf("%s has offset %d\n", fieldName, offset)
 	}
 	fmt.Println("Filling the table with 50 random records.")
-	tableScan, err := record.NewTableScan(transaction, "T", layout)
+	tableScan, err := query.NewTableScan(transaction, "T", layout)
 	if err != nil {
 		t.Fatalf("failed to create table scan: %v", err)
 	}

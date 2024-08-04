@@ -2,7 +2,6 @@ package query
 
 import (
 	"errors"
-	"simpledb/record"
 )
 
 var ErrFieldNotFound = errors.New("field not found")
@@ -41,7 +40,7 @@ func (ps *ProjectScan) GetString(fieldName string) (string, error) {
 	return "", ErrFieldNotFound
 }
 
-func (ps *ProjectScan) GetVal(fieldName string) (*record.Constant, error) {
+func (ps *ProjectScan) GetVal(fieldName string) (*Constant, error) {
 	if ps.HasField(fieldName) {
 		return ps.scan.GetVal(fieldName)
 	}

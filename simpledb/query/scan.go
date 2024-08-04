@@ -7,12 +7,12 @@ type Scan interface {
 	Next() (bool, error)
 	GetInt(fieldName string) (int32, error)
 	GetString(fieldName string) (string, error)
-	GetVal(fieldName string) (*record.Constant, error)
+	GetVal(fieldName string) (*Constant, error)
 	HasField(fieldName string) bool
 	Close()
 }
 type UpdateScan interface {
-	SetVal(fieldName string, val *record.Constant) error
+	SetVal(fieldName string, val *Constant) error
 	SetInt(fieldName string, val int32) error
 	SetString(fieldName string, val string) error
 	Insert() error

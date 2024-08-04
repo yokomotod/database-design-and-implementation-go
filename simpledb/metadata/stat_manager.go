@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
 	"sync"
@@ -76,7 +77,7 @@ func (sm *StatManager) refreshStatistics(tx *tx.Transaction) error {
 	if err != nil {
 		return err
 	}
-	tableCatalog, err := record.NewTableScan(tx, tableCatalogTableName, tableCatalogLayout)
+	tableCatalog, err := query.NewTableScan(tx, tableCatalogTableName, tableCatalogLayout)
 	if err != nil {
 		return err
 	}
@@ -110,7 +111,7 @@ func (sm *StatManager) refreshStatistics(tx *tx.Transaction) error {
 func (sm *StatManager) calcTableStats(tableName string, layout *record.Layout, tx *tx.Transaction) (*StatInfo, error) {
 	numRecs := 0
 	numBlocks := 0
-	ts, err := record.NewTableScan(tx, tableName, layout)
+	ts, err := query.NewTableScan(tx, tableName, layout)
 	if err != nil {
 		return nil, err
 	}

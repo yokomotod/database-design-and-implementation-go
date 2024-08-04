@@ -25,7 +25,7 @@ func TestSelectRecords(t *testing.T) {
 	schema1.AddStringField("B", 9)
 	layout := record.NewLayoutFromSchema(schema1)
 
-	s1, err := record.NewTableScan(tx, "T", layout)
+	s1, err := query.NewTableScan(tx, "T", layout)
 	if err != nil {
 		t.Fatalf("failed to create table scan: %v", err)
 	}
@@ -51,11 +51,11 @@ func TestSelectRecords(t *testing.T) {
 	s1.Close()
 
 	// selecting all records where A=10
-	s2, err := record.NewTableScan(tx, "T", layout)
+	s2, err := query.NewTableScan(tx, "T", layout)
 	if err != nil {
 		t.Fatalf("failed to create table scan: %v", err)
 	}
-	c := record.NewConstantWithInt(10)
+	c := query.NewConstantWithInt(10)
 	lhs := query.NewExpressionWithField("A")
 	rhs := query.NewExpressionWithConstant(c)
 	term := query.NewTerm(lhs, rhs)
@@ -111,7 +111,7 @@ func TestJoinAndSelectRecords(t *testing.T) {
 	schema1.AddStringField("B", 9)
 	layout1 := record.NewLayoutFromSchema(schema1)
 
-	us1, err := record.NewTableScan(tx, "T1", layout1)
+	us1, err := query.NewTableScan(tx, "T1", layout1)
 	if err != nil {
 		t.Fatalf("failed to create table scan: %v", err)
 	}
@@ -141,7 +141,7 @@ func TestJoinAndSelectRecords(t *testing.T) {
 	schema2.AddStringField("D", 9)
 	layout2 := record.NewLayoutFromSchema(schema2)
 
-	us2, err := record.NewTableScan(tx, "T2", layout2)
+	us2, err := query.NewTableScan(tx, "T2", layout2)
 	if err != nil {
 		t.Fatalf("failed to create table scan: %v", err)
 	}
@@ -165,11 +165,11 @@ func TestJoinAndSelectRecords(t *testing.T) {
 	us2.Close()
 
 	// create a product scan
-	s1, err := record.NewTableScan(tx, "T1", layout1)
+	s1, err := query.NewTableScan(tx, "T1", layout1)
 	if err != nil {
 		t.Fatalf("failed to create table scan: %v", err)
 	}
-	s2, err := record.NewTableScan(tx, "T2", layout2)
+	s2, err := query.NewTableScan(tx, "T2", layout2)
 	if err != nil {
 		t.Fatalf("failed to create table scan: %v", err)
 	}
