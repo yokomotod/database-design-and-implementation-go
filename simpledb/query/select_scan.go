@@ -7,6 +7,9 @@ import (
 
 var ErrNotUpdatable = errors.New("scan is not updatable")
 
+var _ Scan = (*SelectScan)(nil)
+var _ UpdateScan = (*SelectScan)(nil)
+
 type SelectScan struct {
 	scan Scan
 	pred *Predicate

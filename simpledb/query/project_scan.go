@@ -6,6 +6,8 @@ import (
 
 var ErrFieldNotFound = errors.New("field not found")
 
+var _ Scan = (*ProjectScan)(nil)
+
 type ProjectScan struct {
 	scan   Scan
 	fields []string

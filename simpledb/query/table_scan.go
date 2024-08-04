@@ -9,6 +9,9 @@ import (
 
 var ErrUnkownFieldType = errors.New("unknown field type")
 
+var _ Scan = (*TableScan)(nil)
+var _ UpdateScan = (*TableScan)(nil)
+
 type TableScan struct {
 	tx          *tx.Transaction
 	layout      *record.Layout

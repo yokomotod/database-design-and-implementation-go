@@ -6,6 +6,8 @@ import (
 
 var ErrAmbiguousField = errors.New("ambiguous field")
 
+var _ Scan = (*ProductScan)(nil)
+
 type ProductScan struct {
 	s1, s2 Scan
 }
