@@ -120,11 +120,14 @@ func (im *IndexManager) GetIndexInfo(tableName string, tx *tx.Transaction) (map[
 		return nil, err
 	}
 	defer ts.Close()
-	next, err := ts.Next()
-	if err != nil {
-		return nil, err
-	}
-	for next {
+	for {
+		next, err := ts.Next()
+		if err != nil {
+			return nil, err
+		}
+		if !next {
+			break
+		}
 		tn, err := ts.GetString(indexCatalogFieldTableName)
 		if err != nil {
 			return nil, err
@@ -148,10 +151,6 @@ func (im *IndexManager) GetIndexInfo(tableName string, tx *tx.Transaction) (map[
 			}
 			ii := NewIndexInfo(indexName, fieldName, tblLayout.Schema(), tx, tblsi)
 			result[fieldName] = ii
-		}
-		next, err = ts.Next()
-		if err != nil {
-			return nil, err
 		}
 	}
 	return result, nil

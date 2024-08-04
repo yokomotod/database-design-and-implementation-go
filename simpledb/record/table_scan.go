@@ -69,11 +69,14 @@ func (ts *TableScan) BeforeFirst() error {
 
 func (ts *TableScan) Next() (bool, error) {
 	var err error
-	ts.currentSlot, err = ts.rp.NextAfter(ts.currentSlot)
-	if err != nil {
-		return false, err
-	}
-	for ts.currentSlot < 0 {
+	for {
+		ts.currentSlot, err = ts.rp.NextAfter(ts.currentSlot)
+		if err != nil {
+			return false, err
+		}
+		if ts.currentSlot >= 0 {
+			break
+		}
 		atLastBlock, err := ts.atLastBlock()
 		if err != nil {
 			return false, err
@@ -82,10 +85,6 @@ func (ts *TableScan) Next() (bool, error) {
 			return false, nil
 		}
 		if err := ts.moveToBlock(ts.rp.Block().Number + 1); err != nil {
-			return false, err
-		}
-		ts.currentSlot, err = ts.rp.NextAfter(ts.currentSlot)
-		if err != nil {
 			return false, err
 		}
 	}

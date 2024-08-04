@@ -102,11 +102,14 @@ func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record
 	}
 	defer tableCatalog.Close()
 
-	next, err := tableCatalog.Next()
-	if err != nil {
-		return nil, err
-	}
-	for next {
+	for {
+		next, err := tableCatalog.Next()
+		if err != nil {
+			return nil, err
+		}
+		if !next {
+			break
+		}
 		t, err := tableCatalog.GetString(tableCatalogFieldTableName)
 		if err != nil {
 			return nil, err
@@ -118,10 +121,6 @@ func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record
 			}
 			break
 		}
-		next, err = tableCatalog.Next()
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	schema := record.NewSchema()
@@ -132,11 +131,14 @@ func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record
 	}
 	defer fieldCatalog.Close()
 
-	next, err = fieldCatalog.Next()
-	if err != nil {
-		return nil, err
-	}
-	for next {
+	for {
+		next, err := fieldCatalog.Next()
+		if err != nil {
+			return nil, err
+		}
+		if !next {
+			break
+		}
 		t, err := fieldCatalog.GetString(fieldCatalogFieldTableName)
 		if err != nil {
 			return nil, err
@@ -160,10 +162,6 @@ func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record
 			}
 			offsets[fldname] = offset
 			schema.AddField(fldname, record.FieldType(fldtype), fldlen)
-		}
-		next, err = fieldCatalog.Next()
-		if err != nil {
-			return nil, err
 		}
 	}
 	return record.NewLayout(schema, offsets, size), nil

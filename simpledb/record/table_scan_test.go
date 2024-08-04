@@ -50,11 +50,14 @@ func TestTableScan(t *testing.T) {
 	if err := tableScan.BeforeFirst(); err != nil {
 		t.Fatalf("failed to before first: %v", err)
 	}
-	next, err := tableScan.Next()
-	if err != nil {
-		t.Fatalf("failed to get next: %v", err)
-	}
-	for next {
+	for {
+		next, err := tableScan.Next()
+		if err != nil {
+			t.Fatalf("failed to get next: %v", err)
+		}
+		if !next {
+			break
+		}
 		a, err := tableScan.GetInt("A")
 		if err != nil {
 			t.Fatalf("failed to get int: %v", err)
@@ -70,10 +73,6 @@ func TestTableScan(t *testing.T) {
 				t.Fatalf("failed to delete: %v", err)
 			}
 		}
-		next, err = tableScan.Next()
-		if err != nil {
-			t.Fatalf("failed to get next: %v", err)
-		}
 	}
 	fmt.Printf("%d values under 25 were deleted\n", count)
 
@@ -81,11 +80,14 @@ func TestTableScan(t *testing.T) {
 	if err := tableScan.BeforeFirst(); err != nil {
 		t.Fatalf("failed to before first: %v", err)
 	}
-	next, err = tableScan.Next()
-	if err != nil {
-		t.Fatalf("failed to get next: %v", err)
-	}
-	for next {
+	for {
+		next, err := tableScan.Next()
+		if err != nil {
+			t.Fatalf("failed to get next: %v", err)
+		}
+		if !next {
+			break
+		}
 		a, err := tableScan.GetInt("A")
 		if err != nil {
 			t.Fatalf("failed to get int: %v", err)
@@ -95,10 +97,6 @@ func TestTableScan(t *testing.T) {
 			t.Fatalf("failed to get string: %v", err)
 		}
 		fmt.Printf("slot %s: {%d, %s}\n", tableScan.GetRID().String(), a, b)
-		next, err = tableScan.Next()
-		if err != nil {
-			t.Fatalf("failed to get next: %v", err)
-		}
 	}
 	tableScan.Close()
 	if err := transaction.Commit(); err != nil {
