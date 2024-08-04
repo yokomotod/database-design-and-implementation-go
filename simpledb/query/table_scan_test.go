@@ -1,9 +1,10 @@
-package record_test
+package query_test
 
 import (
 	"fmt"
 	"math/rand"
 	"path"
+	"simpledb/query"
 	"simpledb/record"
 	"simpledb/server"
 	"testing"
@@ -28,7 +29,7 @@ func TestTableScan(t *testing.T) {
 		fmt.Printf("%s has offset %d\n", fieldName, offset)
 	}
 	fmt.Println("Filling the table with 50 random records.")
-	tableScan, err := record.NewTableScan(transaction, "T", layout)
+	tableScan, err := query.NewTableScan(transaction, "T", layout)
 	if err != nil {
 		t.Fatalf("failed to create table scan: %v", err)
 	}
@@ -43,7 +44,11 @@ func TestTableScan(t *testing.T) {
 		if err := tableScan.SetString("B", fmt.Sprintf("rec%d", n)); err != nil {
 			t.Fatalf("failed to set string: %v", err)
 		}
-		fmt.Printf("inserting record into slot %s: {%d, %s}\n", tableScan.GetRID().String(), n, fmt.Sprintf("rec%d", n))
+		rid, err := tableScan.GetRID()
+		if err != nil {
+			t.Fatalf("failed to get rid: %v", err)
+		}
+		fmt.Printf("inserting record into slot %s: {%d, %s}\n", rid.String(), n, fmt.Sprintf("rec%d", n))
 	}
 	fmt.Println("Deleting these records, whose A-values are less than 25.")
 	count := 0
@@ -68,7 +73,11 @@ func TestTableScan(t *testing.T) {
 		}
 		if a < 25 {
 			count++
-			fmt.Printf("deleting record from slot %s: {%d, %s}\n", tableScan.GetRID().String(), a, b)
+			rid, err := tableScan.GetRID()
+			if err != nil {
+				t.Fatalf("failed to get rid: %v", err)
+			}
+			fmt.Printf("deleting record from slot %s: {%d, %s}\n", rid.String(), a, b)
 			if err := tableScan.Delete(); err != nil {
 				t.Fatalf("failed to delete: %v", err)
 			}
@@ -96,7 +105,11 @@ func TestTableScan(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to get string: %v", err)
 		}
-		fmt.Printf("slot %s: {%d, %s}\n", tableScan.GetRID().String(), a, b)
+		rid, err := tableScan.GetRID()
+		if err != nil {
+			t.Fatalf("failed to get rid: %v", err)
+		}
+		fmt.Printf("slot %s: {%d, %s}\n", rid.String(), a, b)
 	}
 	tableScan.Close()
 	if err := transaction.Commit(); err != nil {

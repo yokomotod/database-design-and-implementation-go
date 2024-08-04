@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"path"
+	"simpledb/query"
 	"simpledb/record"
 	"simpledb/server"
 	"testing"
@@ -49,7 +50,7 @@ func TestMetadataManager(t *testing.T) {
 	}
 
 	// Part 2: Statistics Metadata
-	tableScan, err := record.NewTableScan(tx, "MyTable", layout)
+	tableScan, err := query.NewTableScan(tx, "MyTable", layout)
 	if err != nil {
 		t.Fatalf("failed to create table scan: %v", err)
 	}

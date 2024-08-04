@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
 )
@@ -92,7 +93,7 @@ func NewIndexManager(isNew bool, tableManager *TableManager, statManager *StatMa
 }
 
 func (im *IndexManager) CreateIndex(indexName string, tableName string, fieldName string, tx *tx.Transaction) error {
-	ts, err := record.NewTableScan(tx, indexCatalogTableName, im.layout)
+	ts, err := query.NewTableScan(tx, indexCatalogTableName, im.layout)
 	if err != nil {
 		return err
 	}
@@ -115,7 +116,7 @@ func (im *IndexManager) CreateIndex(indexName string, tableName string, fieldNam
 
 func (im *IndexManager) GetIndexInfo(tableName string, tx *tx.Transaction) (map[string]*IndexInfo, error) {
 	result := make(map[string]*IndexInfo)
-	ts, err := record.NewTableScan(tx, indexCatalogTableName, im.layout)
+	ts, err := query.NewTableScan(tx, indexCatalogTableName, im.layout)
 	if err != nil {
 		return nil, err
 	}

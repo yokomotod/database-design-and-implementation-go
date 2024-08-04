@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"simpledb/metadata"
+	"simpledb/query"
 	"simpledb/record"
 	"simpledb/server"
 	"testing"
@@ -36,7 +37,7 @@ func TestCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to tblcat layout: %v", err)
 	}
-	tableScan, err := record.NewTableScan(transaction, "tblcat", layout)
+	tableScan, err := query.NewTableScan(transaction, "tblcat", layout)
 	if err != nil {
 		t.Fatalf("failed to create tblcat table scan: %v", err)
 	}
@@ -65,7 +66,7 @@ func TestCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to fldcat layout: %v", err)
 	}
-	tableScan, err = record.NewTableScan(transaction, "fldcat", layout)
+	tableScan, err = query.NewTableScan(transaction, "fldcat", layout)
 	if err != nil {
 		t.Fatalf("failed to create fldcat table scan: %v", err)
 	}

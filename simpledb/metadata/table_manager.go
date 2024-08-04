@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
 )
@@ -49,7 +50,7 @@ func NewTableManager(isNew bool, tx *tx.Transaction) (*TableManager, error) {
 
 func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx *tx.Transaction) error {
 	layout := record.NewLayoutFromSchema(schema)
-	tableCatalog, err := record.NewTableScan(tx, tableCatalogTableName, tm.tableCatalogLayout)
+	tableCatalog, err := query.NewTableScan(tx, tableCatalogTableName, tm.tableCatalogLayout)
 	if err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx 
 		return err
 	}
 
-	fieldCatalog, err := record.NewTableScan(tx, fieldCatalogTableName, tm.fieldCatalogLayout)
+	fieldCatalog, err := query.NewTableScan(tx, fieldCatalogTableName, tm.fieldCatalogLayout)
 	if err != nil {
 		return err
 	}
@@ -96,7 +97,7 @@ func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx 
 
 func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record.Layout, error) {
 	var size int32 = -1
-	tableCatalog, err := record.NewTableScan(tx, tableCatalogTableName, tm.tableCatalogLayout)
+	tableCatalog, err := query.NewTableScan(tx, tableCatalogTableName, tm.tableCatalogLayout)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +126,7 @@ func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record
 
 	schema := record.NewSchema()
 	offsets := make(map[string]int32)
-	fieldCatalog, err := record.NewTableScan(tx, fieldCatalogTableName, tm.fieldCatalogLayout)
+	fieldCatalog, err := query.NewTableScan(tx, fieldCatalogTableName, tm.fieldCatalogLayout)
 	if err != nil {
 		return nil, err
 	}

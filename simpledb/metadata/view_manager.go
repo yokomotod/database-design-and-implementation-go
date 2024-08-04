@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
 )
@@ -33,7 +34,7 @@ func (vm *ViewManager) CreateView(viewName string, viewDef string, tx *tx.Transa
 	if err != nil {
 		return err
 	}
-	ts, err := record.NewTableScan(tx, viewCatalogTableName, layout)
+	ts, err := query.NewTableScan(tx, viewCatalogTableName, layout)
 	if err != nil {
 		return err
 	}
@@ -58,7 +59,7 @@ func (vm *ViewManager) GetViewDef(viewName string, tx *tx.Transaction) (string, 
 	if err != nil {
 		return "", err
 	}
-	ts, err := record.NewTableScan(tx, viewCatalogTableName, layout)
+	ts, err := query.NewTableScan(tx, viewCatalogTableName, layout)
 	if err != nil {
 		return "", err
 	}
