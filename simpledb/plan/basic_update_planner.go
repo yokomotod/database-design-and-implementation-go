@@ -16,7 +16,7 @@ func NewBasicUpdatePlanner(mdm *metadata.Manager) *BasicUpdatePlanner {
 	return &BasicUpdatePlanner{mdm: mdm}
 }
 
-func (up *BasicUpdatePlanner) executeInsert(data *parse.InsertData, tx *tx.Transaction) (int, error) {
+func (up *BasicUpdatePlanner) ExecuteInsert(data *parse.InsertData, tx *tx.Transaction) (int, error) {
 	tableName := data.TableName
 	tablePlan, err := NewTablePlan(tx, tableName, up.mdm)
 	if err != nil {
@@ -47,7 +47,7 @@ func (up *BasicUpdatePlanner) executeInsert(data *parse.InsertData, tx *tx.Trans
 	return 1, nil
 }
 
-func (up *BasicUpdatePlanner) executeDelete(data *parse.DeleteData, tx *tx.Transaction) (int, error) {
+func (up *BasicUpdatePlanner) ExecuteDelete(data *parse.DeleteData, tx *tx.Transaction) (int, error) {
 	tableName := data.TableName
 	tablePlan, err := NewTablePlan(tx, tableName, up.mdm)
 	if err != nil {
