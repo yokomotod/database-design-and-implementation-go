@@ -39,11 +39,16 @@ func TestParserQuery(t *testing.T) {
 			wantError: false,
 		},
 		{
+			input:     "select sid, sname, did, dname, FROM student, dept WHERE sname = 'John'",
+			wantQuery: "select sid, sname, did, dname from student, dept where sname = John",
+			wantError: false,
+		},
+		{
 			input:     "SELECT * FROM STUDENT", // * は未対応
 			wantError: true,
 		},
 		{
-			input:     "SELECT sid, FROM STUDENT",
+			input:     "SELECT sid,, FROM STUDENT",
 			wantError: true,
 		},
 		{

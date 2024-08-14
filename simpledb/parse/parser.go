@@ -181,7 +181,7 @@ func (p *Parser) whereOpt() (*query.Predicate, error) {
 	}
 }
 
-// <SelectList> := <Field> [ , <SelectList> ]
+// <SelectList> := <Field> [ , <SelectList> ] [ , ]
 func (p *Parser) selectList() ([]string, error) {
 	// <Field>
 	field, err := p.Field()
@@ -198,6 +198,11 @@ func (p *Parser) selectList() ([]string, error) {
 			return nil, err
 		}
 
+		// Exit if trailing comma
+		if !p.lex.MatchIdentifier() {
+			return fields, nil
+		}
+
 		// <SelectList>
 		rest, err := p.selectList()
 		if err != nil {
@@ -210,7 +215,7 @@ func (p *Parser) selectList() ([]string, error) {
 	return fields, nil
 }
 
-// <TableList> := IdTok [ , <TableList> ]
+// <TableList> := IdTok [ , <TableList> ] [ , ]
 func (p *Parser) tableList() ([]string, error) {
 	// IdTok
 	table, err := p.lex.EatIdentifier()
@@ -225,6 +230,11 @@ func (p *Parser) tableList() ([]string, error) {
 		// ,
 		if err := p.lex.EatDelim(','); err != nil {
 			return nil, err
+		}
+
+		// Exit if trailing comma
+		if !p.lex.MatchIdentifier() {
+			return tables, nil
 		}
 
 		// <TableList>
