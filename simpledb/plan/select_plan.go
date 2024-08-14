@@ -27,13 +27,20 @@ func (p *SelectPlan) BlocksAccessed() int {
 }
 
 func (p *SelectPlan) RecordsOutput() int {
-	// TODO implement
-	return 0
+	return p.plan.RecordsOutput() / p.predicate.ReductionFactor(p)
 }
 
 func (p *SelectPlan) DistinctValues(fieldName string) int {
-	// TODO implement
-	return 0
+	if p.predicate.EquatesWithConstant(fieldName) != nil {
+		return 1
+	} else {
+		otherField := p.predicate.EquatesWithField(fieldName)
+		if otherField != "" {
+			return min(p.plan.DistinctValues(fieldName), p.plan.DistinctValues(otherField))
+		} else {
+			return p.plan.DistinctValues(fieldName)
+		}
+	}
 }
 
 func (p *SelectPlan) Schema() *record.Schema {
