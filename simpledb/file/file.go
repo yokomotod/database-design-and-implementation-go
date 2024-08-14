@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"unicode/utf16"
 )
 
@@ -99,6 +100,7 @@ type Manager struct {
 	blockSize int32
 	isNew     bool
 	files     map[string]*os.File
+	mux       *sync.Mutex
 }
 
 func NewManager(dbDir string, blockSize int32) (*Manager, error) {
@@ -137,6 +139,7 @@ func NewManager(dbDir string, blockSize int32) (*Manager, error) {
 		blockSize: blockSize,
 		isNew:     isNew,
 		files:     make(map[string]*os.File),
+		mux:       &sync.Mutex{},
 	}, nil
 }
 
@@ -228,6 +231,9 @@ func (fm *Manager) Length(filename string) (int32, error) {
 }
 
 func (fm *Manager) openFile(filename string) (*os.File, error) {
+	fm.mux.Lock()
+	defer fm.mux.Unlock()
+
 	if f, ok := fm.files[filename]; ok {
 		return f, nil
 	}
