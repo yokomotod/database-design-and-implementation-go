@@ -1,6 +1,10 @@
 package query
 
-import "strings"
+import (
+	"math"
+	"simpledb/record"
+	"strings"
+)
 
 type Predicate struct {
 	terms []*Term
@@ -41,4 +45,45 @@ func (p *Predicate) String() string {
 		terms = append(terms, term.String())
 	}
 	return strings.Join(terms, " and ")
+}
+
+// 実装都合で Plan のインターフェース相当のものをquery packageに定義
+type planLike interface {
+	Open() (Scan, error)
+	BlocksAccessed() int
+	RecordsOutput() int
+	DistinctValues(fieldName string) int
+	Schema() *record.Schema
+}
+
+func (p *Predicate) ReductionFactor(plan planLike) int {
+	reductionFactor := 1
+	for _, term := range p.terms {
+		rf := term.reductionFactor(plan)
+		if rf == math.MaxInt {
+			return math.MaxInt
+		}
+		reductionFactor *= rf
+	}
+	return reductionFactor
+}
+
+func (p *Predicate) EquatesWithConstant(fieldName string) *Constant {
+	for _, term := range p.terms {
+		c := term.equatesWithConstant(fieldName)
+		if c != nil {
+			return c
+		}
+	}
+	return nil
+}
+
+func (p *Predicate) EquatesWithField(fieldName string) string {
+	for _, term := range p.terms {
+		f := term.equatesWithField(fieldName)
+		if f != "" {
+			return f
+		}
+	}
+	return ""
 }
