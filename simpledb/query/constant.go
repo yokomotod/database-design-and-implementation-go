@@ -47,7 +47,7 @@ func (c *Constant) Equals(other *Constant) bool {
 
 func (c *Constant) String() string {
 	if c.ival != nil {
-		return fmt.Sprintf("%d", *c.ival)
+		return fmt.Sprint(*c.ival)
 	}
-	return *c.sval
+	return fmt.Sprintf("'%s'", *c.sval)
 }
