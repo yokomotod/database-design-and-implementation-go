@@ -31,12 +31,11 @@ func NewPlanner(queryPlanner QueryPlanner, updatePlanner UpdatePlanner) *Planner
 	}
 }
 
-func (p *Planner) createQueryPlan(query string, tx *tx.Transaction) (Plan, error) {
+func (p *Planner) CreateQueryPlan(query string, tx *tx.Transaction) (Plan, error) {
 	parser, err := parse.NewParser(query)
 	if err != nil {
 		return nil, err
 	}
-
 	querydata, err := parser.Query()
 	if err != nil {
 		return nil, err
@@ -48,10 +47,9 @@ func (p *Planner) createQueryPlan(query string, tx *tx.Transaction) (Plan, error
 	}
 
 	return p.queryPlanner.CreatePlan(querydata, tx)
-
 }
 
-func (p *Planner) executeUpdate(cmd string, tx *tx.Transaction) (int, error) {
+func (p *Planner) ExecuteUpdate(cmd string, tx *tx.Transaction) (int, error) {
 	parser, err := parse.NewParser(cmd)
 	if err != nil {
 		return 0, err

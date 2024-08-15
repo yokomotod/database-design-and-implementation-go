@@ -24,7 +24,8 @@ func (qp *BasicQueryPlanner) CreatePlan(querydata *parse.QueryData, tx *tx.Trans
 
 	for _, tableName := range querydata.Tables {
 		viewDef, err := qp.mdm.GetViewDef(tableName, tx)
-		if err == nil {
+		// View定義が存在しない場合から文字列
+		if err == nil && viewDef != "" {
 			// Viewの場合再帰的にPlanを作成
 			parser, err := parse.NewParser(viewDef)
 			if err != nil {
