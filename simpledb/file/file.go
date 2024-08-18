@@ -152,6 +152,9 @@ func (fm *Manager) BlockSize() int32 {
 }
 
 func (fm *Manager) Read(blk BlockID, p *Page) error {
+	fm.mux.Lock()
+	defer fm.mux.Unlock()
+
 	f, err := fm.openFile(blk.FileName)
 	if err != nil {
 		return fmt.Errorf("fm.openFile: %w", err)
@@ -171,6 +174,9 @@ func (fm *Manager) Read(blk BlockID, p *Page) error {
 }
 
 func (fm *Manager) Write(blk BlockID, p *Page) error {
+	fm.mux.Lock()
+	defer fm.mux.Unlock()
+
 	f, err := fm.openFile(blk.FileName)
 	if err != nil {
 		return fmt.Errorf("fm.openFile: %w", err)
@@ -190,6 +196,9 @@ func (fm *Manager) Write(blk BlockID, p *Page) error {
 }
 
 func (fm *Manager) Append(filename string) (BlockID, error) {
+	fm.mux.Lock()
+	defer fm.mux.Unlock()
+
 	newBlockNum, err := fm.Length(filename)
 	if err != nil {
 		return BlockID{}, fmt.Errorf("fm.Length: %w", err)
@@ -231,9 +240,6 @@ func (fm *Manager) Length(filename string) (int32, error) {
 }
 
 func (fm *Manager) openFile(filename string) (*os.File, error) {
-	fm.mux.Lock()
-	defer fm.mux.Unlock()
-
 	if f, ok := fm.files[filename]; ok {
 		return f, nil
 	}
