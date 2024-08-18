@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"simpledb/file"
+	"sync"
 )
 
 type Buffer struct {
@@ -77,6 +78,7 @@ func (b *Buffer) flush() error {
 type Manager struct {
 	bufferPool   []*Buffer
 	numAvailable int32
+	mux          *sync.Mutex
 }
 
 func NewManager(fm *file.Manager, buffSize int32) *Manager {
@@ -88,10 +90,14 @@ func NewManager(fm *file.Manager, buffSize int32) *Manager {
 	return &Manager{
 		bufferPool:   bufferPool,
 		numAvailable: buffSize,
+		mux:          &sync.Mutex{},
 	}
 }
 
 func (bm *Manager) FlushAll(txNum int32) {
+	bm.mux.Lock()
+	defer bm.mux.Unlock()
+
 	for _, buf := range bm.bufferPool {
 		if buf.txNum == txNum {
 			buf.flush()
@@ -100,10 +106,16 @@ func (bm *Manager) FlushAll(txNum int32) {
 }
 
 func (bm *Manager) NumAvailable() int32 {
+	bm.mux.Lock()
+	defer bm.mux.Unlock()
+
 	return bm.numAvailable
 }
 
 func (bm *Manager) Unpin(buff *Buffer) {
+	bm.mux.Lock()
+	defer bm.mux.Unlock()
+
 	buff.Unpin()
 	if !buff.IsPinned() {
 		bm.numAvailable++
@@ -114,6 +126,9 @@ func (bm *Manager) Unpin(buff *Buffer) {
 var ErrBufferAbort = errors.New("buffer abort")
 
 func (bm *Manager) Pin(blk file.BlockID) (*Buffer, error) {
+	bm.mux.Lock()
+	defer bm.mux.Unlock()
+
 	buff, err := bm.tryToPin(blk)
 	if err != nil {
 		return nil, fmt.Errorf("bm.tryToPin: %w", err)
