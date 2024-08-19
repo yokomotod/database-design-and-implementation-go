@@ -51,3 +51,13 @@ func (c *Constant) String() string {
 	}
 	return fmt.Sprintf("'%s'", *c.sval)
 }
+
+func (c *Constant) AnyValue() any {
+	if c.ival != nil {
+		return *c.ival
+	}
+	if c.sval != nil {
+		return *c.sval
+	}
+	return nil
+}
