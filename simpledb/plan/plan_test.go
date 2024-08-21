@@ -65,7 +65,10 @@ func TestSingleTablePlan(t *testing.T) {
 	printStats(3, p3)
 	printStats(4, p4)
 
-	t.Logf("%d", p4.BlocksAccessed())
+	err = tx.Commit()
+	if err != nil {
+		t.Fatalf("failed to commit tx: %v", err)
+	}
 
 }
 
@@ -115,6 +118,12 @@ func TestMultipleTablePlan(t *testing.T) {
 	printStats(2, p2)
 	printStats(3, p3)
 	printStats(4, p4)
+
+	err = tx.Commit()
+	if err != nil {
+		t.Fatalf("failed to commit tx: %v", err)
+	}
+
 }
 
 func printStats(n int, p plan.Plan) {
