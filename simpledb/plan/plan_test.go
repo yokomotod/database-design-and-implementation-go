@@ -56,12 +56,14 @@ func TestSingleTablePlan(t *testing.T) {
 	}
 
 	p4, err := plan.NewProjectPlan(p3, []string{"sname", "majorid", "gradyear"})
+	if err != nil {
+		t.Fatalf("failed to create project plan p4: %v", err)
+	}
 
 	printStats(1, p1)
 	printStats(2, p2)
 	printStats(3, p3)
 	printStats(4, p4)
-
 
 	t.Logf("%d", p4.BlocksAccessed())
 
@@ -105,12 +107,14 @@ func TestMultipleTablePlan(t *testing.T) {
 		),
 	))
 
-
 	if err != nil {
 		t.Fatalf("failed to create select plan p4: %v", err)
 	}
 
 	p5, err := plan.NewProjectPlan(p4, []string{"sname", "dname"})
+	if err != nil {
+		t.Fatalf("failed to create project plan p5: %v", err)
+	}
 
 	t.Logf("%d", p5.BlocksAccessed())
 }
@@ -179,13 +183,22 @@ func insertTestData(simpledb *server.SimpleDB) error {
 	for _, s := range students {
 		q := fmt.Sprintf("insert into student(SId, SName, MajorId, GradYear) values(%d, '%s', %d, %d)", s.sid, s.sname, s.majorid, s.gradyear)
 		_, err = planner.ExecuteUpdate(q, tx)
+		if err != nil {
+			return err
+		}
 	}
 
 	// 強制的に統計情報を更新 (Metadata Managerに機能追加を検討)
 	mdm := simpledb.MetadataManager()
 	studentLayout, err := mdm.GetLayout("student", tx)
+	if err != nil {
+		return err
+	}
 	for i := 0; i <= 100; i++ {
 		_, err = mdm.GetStatInfo("student", studentLayout, tx)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = tx.Commit()

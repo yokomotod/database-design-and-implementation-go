@@ -26,7 +26,10 @@ func (qp *BasicQueryPlanner) CreatePlan(querydata *parse.QueryData, tx *tx.Trans
 
 	for _, tableName := range querydata.Tables {
 		viewDef, err := qp.mdm.GetViewDef(tableName, tx)
-		// View定義が存在しない場合から文字列
+		if err != nil {
+			return nil, err
+		}
+		// View定義が存在しない場合空文字列
 		if err == nil && viewDef != "" {
 			// Viewの場合再帰的にPlanを作成
 			parser, err := parse.NewParser(viewDef)
@@ -42,14 +45,14 @@ func (qp *BasicQueryPlanner) CreatePlan(querydata *parse.QueryData, tx *tx.Trans
 				return nil, err
 			}
 			plans = append(plans, plan)
-		} else {
-			// テーブルの場合
-			plan, err := NewTablePlan(tx, tableName, qp.mdm)
-			if err != nil {
-				return nil, err
-			}
-			plans = append(plans, plan)
+			continue
 		}
+		// テーブルの場合
+		plan, err := NewTablePlan(tx, tableName, qp.mdm)
+		if err != nil {
+			return nil, err
+		}
+		plans = append(plans, plan)
 	}
 
 	// Step 2: Step1のPlansに対するProduct Planを生成
