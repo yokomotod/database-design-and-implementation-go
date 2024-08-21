@@ -33,14 +33,14 @@ func (p *SelectPlan) RecordsOutput() int {
 func (p *SelectPlan) DistinctValues(fieldName string) int {
 	if p.predicate.EquatesWithConstant(fieldName) != nil {
 		return 1
-	} else {
-		otherField := p.predicate.EquatesWithField(fieldName)
-		if otherField != "" {
-			return min(p.plan.DistinctValues(fieldName), p.plan.DistinctValues(otherField))
-		} else {
-			return p.plan.DistinctValues(fieldName)
-		}
 	}
+
+	otherField := p.predicate.EquatesWithField(fieldName)
+	if otherField != "" {
+		return min(p.plan.DistinctValues(fieldName), p.plan.DistinctValues(otherField))
+	}
+
+	return p.plan.DistinctValues(fieldName)
 }
 
 func (p *SelectPlan) Schema() *record.Schema {

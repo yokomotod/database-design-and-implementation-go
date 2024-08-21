@@ -47,13 +47,9 @@ func (p *Predicate) String() string {
 	return strings.Join(terms, " and ")
 }
 
-// 実装都合で Plan のインターフェース相当のものをquery packageに定義
+// plan.Plan インターフェースの一部を要求する
 type planLike interface {
-	Open() (Scan, error)
-	BlocksAccessed() int
-	RecordsOutput() int
 	DistinctValues(fieldName string) int
-	Schema() *record.Schema
 }
 
 func (p *Predicate) ReductionFactor(plan planLike) int {
