@@ -29,7 +29,7 @@ func (p *SelectPlan) BlocksAccessed() int {
 }
 
 func (p *SelectPlan) RecordsOutput() int {
-	return p.plan.RecordsOutput() / p.predicate.ReductionFactor(p)
+	return p.plan.RecordsOutput() / p.predicate.ReductionFactor(p.plan)
 }
 
 func (p *SelectPlan) DistinctValues(fieldName string) int {
