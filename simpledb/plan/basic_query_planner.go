@@ -6,6 +6,8 @@ import (
 	"simpledb/tx"
 )
 
+var _ QueryPlanner = (*BasicQueryPlanner)(nil)
+
 type BasicQueryPlanner struct {
 	mdm *metadata.Manager
 }

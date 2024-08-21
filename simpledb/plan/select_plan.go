@@ -5,6 +5,8 @@ import (
 	"simpledb/record"
 )
 
+var _ Plan = (*SelectPlan)(nil)
+
 type SelectPlan struct {
 	plan      Plan
 	predicate *query.Predicate

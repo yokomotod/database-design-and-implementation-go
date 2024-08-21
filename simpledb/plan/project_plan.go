@@ -5,6 +5,8 @@ import (
 	"simpledb/record"
 )
 
+var _ Plan = (*ProjectPlan)(nil)
+
 type ProjectPlan struct {
 	plan   Plan
 	schema *record.Schema

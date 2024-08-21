@@ -7,6 +7,8 @@ import (
 	"simpledb/tx"
 )
 
+var _ Plan = (*TablePlan)(nil)
+
 type TablePlan struct {
 	tableName string
 	tx        *tx.Transaction

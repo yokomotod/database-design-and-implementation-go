@@ -8,6 +8,8 @@ import (
 	"simpledb/tx"
 )
 
+var _ UpdatePlanner = (*BasicUpdatePlanner)(nil)
+
 type BasicUpdatePlanner struct {
 	mdm *metadata.Manager
 }
