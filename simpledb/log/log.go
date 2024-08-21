@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"sync"
 
 	"simpledb/file"
 )
@@ -69,6 +70,7 @@ type Manager struct {
 	// LSN: log sequence number
 	latestLSN    int32
 	lastSavedLSN int32
+	mux          *sync.Mutex
 }
 
 func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
@@ -84,6 +86,7 @@ func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
 		fileManager: fileManager,
 		logFile:     logFile,
 		logPage:     logPage,
+		mux:         &sync.Mutex{},
 	}
 
 	if logSize == 0 {
@@ -138,6 +141,9 @@ func (lm *Manager) Iterator() (*LogIterator, error) {
 }
 
 func (lm *Manager) Append(logRecord []byte) (int32, error) {
+	lm.mux.Lock()
+	defer lm.mux.Unlock()
+
 	boundary := lm.logPage.GetInt(0)
 	recordSize := int32(len(logRecord))
 	bytesNeeded := recordSize + file.Int32Bytes
