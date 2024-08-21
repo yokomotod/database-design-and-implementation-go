@@ -1,6 +1,9 @@
 package query
 
-import "strings"
+import (
+	"math"
+	"strings"
+)
 
 type Predicate struct {
 	terms []*Term
@@ -41,4 +44,41 @@ func (p *Predicate) String() string {
 		terms = append(terms, term.String())
 	}
 	return strings.Join(terms, " and ")
+}
+
+// plan.Plan インターフェースの一部を要求する
+type planLike interface {
+	DistinctValues(fieldName string) int
+}
+
+func (p *Predicate) ReductionFactor(plan planLike) int {
+	reductionFactor := 1
+	for _, term := range p.terms {
+		rf := term.reductionFactor(plan)
+		if rf == math.MaxInt {
+			return math.MaxInt
+		}
+		reductionFactor *= rf
+	}
+	return reductionFactor
+}
+
+func (p *Predicate) EquatesWithConstant(fieldName string) *Constant {
+	for _, term := range p.terms {
+		c := term.equatesWithConstant(fieldName)
+		if c != nil {
+			return c
+		}
+	}
+	return nil
+}
+
+func (p *Predicate) EquatesWithField(fieldName string) string {
+	for _, term := range p.terms {
+		f := term.equatesWithField(fieldName)
+		if f != "" {
+			return f
+		}
+	}
+	return ""
 }

@@ -7,6 +7,7 @@ import (
 	"simpledb/file"
 	"simpledb/log"
 	"simpledb/metadata"
+	"simpledb/plan"
 	"simpledb/tx"
 )
 
@@ -19,6 +20,7 @@ type SimpleDB struct {
 	logManager      *log.Manager
 	bufferManager   *buffer.Manager
 	metadataManager *metadata.Manager
+	planner         *plan.Planner
 }
 
 func NewSimpleDB(dbDir string, blockSize, bufferSize int32) (*SimpleDB, error) {
@@ -62,6 +64,11 @@ func NewSimpleDBWithMetadata(dirname string) (*SimpleDB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("metadata.NewManager: %w", err)
 	}
+
+	queryPlanner := plan.NewBasicQueryPlanner(db.metadataManager)
+	updatePlanner := plan.NewBasicUpdatePlanner(db.metadataManager)
+	db.planner = plan.NewPlanner(queryPlanner, updatePlanner)
+
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("tx.Commit: %w", err)
 	}
@@ -90,4 +97,8 @@ func (db *SimpleDB) BufferManager() *buffer.Manager {
 
 func (db *SimpleDB) MetadataManager() *metadata.Manager {
 	return db.metadataManager
+}
+
+func (db *SimpleDB) Planner() *plan.Planner {
+	return db.planner
 }
