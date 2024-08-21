@@ -89,7 +89,7 @@ func TestMultipleTablePlan(t *testing.T) {
 		t.Fatalf("failed to create table plan: %v", err)
 	}
 
-	p2, err := plan.NewTablePlan(tx, "department", simpleDB.MetadataManager())
+	p2, err := plan.NewTablePlan(tx, "dept", simpleDB.MetadataManager())
 	if err != nil {
 		t.Fatalf("failed to create table plan: %v", err)
 	}
@@ -111,12 +111,10 @@ func TestMultipleTablePlan(t *testing.T) {
 		t.Fatalf("failed to create select plan p4: %v", err)
 	}
 
-	p5, err := plan.NewProjectPlan(p4, []string{"sname", "dname"})
-	if err != nil {
-		t.Fatalf("failed to create project plan p5: %v", err)
-	}
-
-	t.Logf("%d", p5.BlocksAccessed())
+	printStats(1, p1)
+	printStats(2, p2)
+	printStats(3, p3)
+	printStats(4, p4)
 }
 
 func printStats(n int, p plan.Plan) {
@@ -155,8 +153,8 @@ func insertTestData(simpledb *server.SimpleDB) error {
 	}
 
 	for _, d := range depts {
-		q := fmt.Sprintf("insert into dept(did, dname) values(%d, '%s')", d.did, d.dname)
-		_, err = planner.ExecuteUpdate(q, tx)
+		query := fmt.Sprintf("insert into dept(did, dname) values(%d, '%s')", d.did, d.dname)
+		_, err = planner.ExecuteUpdate(query, tx)
 		if err != nil {
 			return err
 		}
@@ -181,8 +179,8 @@ func insertTestData(simpledb *server.SimpleDB) error {
 	}
 
 	for _, s := range students {
-		q := fmt.Sprintf("insert into student(SId, SName, MajorId, GradYear) values(%d, '%s', %d, %d)", s.sid, s.sname, s.majorid, s.gradyear)
-		_, err = planner.ExecuteUpdate(q, tx)
+		query := fmt.Sprintf("insert into student(sid, sname, majorid, gradyear) values(%d, '%s', %d, %d)", s.sid, s.sname, s.majorid, s.gradyear)
+		_, err = planner.ExecuteUpdate(query, tx)
 		if err != nil {
 			return err
 		}

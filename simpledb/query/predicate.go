@@ -2,7 +2,6 @@ package query
 
 import (
 	"math"
-	"simpledb/record"
 	"strings"
 )
 

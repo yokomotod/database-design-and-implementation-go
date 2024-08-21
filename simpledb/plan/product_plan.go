@@ -33,7 +33,7 @@ func (p *ProductPlan) Open() (query.Scan, error) {
 }
 
 func (p *ProductPlan) BlocksAccessed() int {
-	return p.p1.BlocksAccessed() + (p.p1.BlocksAccessed() * p.p2.BlocksAccessed())
+	return p.p1.BlocksAccessed() + (p.p1.RecordsOutput() * p.p2.BlocksAccessed())
 }
 
 func (p *ProductPlan) RecordsOutput() int {

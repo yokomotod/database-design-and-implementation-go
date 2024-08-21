@@ -40,15 +40,19 @@ func (t *Term) reductionFactor(p planLike) int {
 		lhsName := t.lhs.AsFieldName()
 		rhsName := t.rhs.AsFieldName()
 		return max(p.DistinctValues(lhsName), p.DistinctValues(rhsName))
-	} else if t.lhs.IsFieldName() {
-		return p.DistinctValues(t.lhs.AsFieldName())
-	} else if t.rhs.IsFieldName() {
-		return p.DistinctValues(t.rhs.AsFieldName())
-	} else if t.lhs.AsConstant().Equals(t.rhs.AsConstant()) {
-		return 1
-	} else {
-		return math.MaxInt
 	}
+	if t.lhs.IsFieldName() {
+		return p.DistinctValues(t.lhs.AsFieldName())
+	}
+	if t.rhs.IsFieldName() {
+		return p.DistinctValues(t.rhs.AsFieldName())
+	}
+	if t.lhs.AsConstant().Equals(t.rhs.AsConstant()) {
+		return 1
+	}
+
+	return math.MaxInt
+
 }
 
 // Determine if this term is of the form "F=c"
