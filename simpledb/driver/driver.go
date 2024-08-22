@@ -1,7 +1,6 @@
 package driver
 
 import (
-	"context"
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
@@ -22,10 +21,6 @@ func (d SimpleDBDriver) Open(name string) (driver.Conn, error) {
 		return nil, err
 	}
 	conn := &Connection{db: db, transaction: nil, planner: db.Planner()}
-	_, err = conn.BeginTx(context.TODO(), driver.TxOptions{})
-	if err != nil {
-		return nil, err
-	}
 	fmt.Println("database opened")
 	return conn, nil
 }
