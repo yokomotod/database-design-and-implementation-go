@@ -24,9 +24,6 @@ func (conn *Connection) Begin() (driver.Tx, error) {
 }
 
 func (conn *Connection) Close() error {
-	if conn.transaction != nil {
-		return conn.transaction.Commit()
-	}
 	return nil
 }
 
@@ -55,9 +52,6 @@ func (conn *Connection) QueryContext(ctx context.Context, query string, args []d
 }
 
 func (conn *Connection) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
-	if conn.transaction != nil {
-		return conn.transaction, nil
-	}
 	tx, err := conn.db.NewTx()
 	if err != nil {
 		return nil, err
