@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"simpledb/index/btree"
 	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
@@ -30,16 +31,16 @@ func NewIndexInfo(indexName string, fieldName string, tableSchema *record.Schema
 	return ii
 }
 
-// TODO: HashIndex が作られた際に要再実装
-// func (ii *IndexInfo) Open() *Index {
-// 	return NewHashIndex(ii.tx, ii.indexName, ii.indexLayout)
-// }
-//
-// func (ii *IndexInfo) BlocksAccessed() int {
-// 	rpb := ii.tx.BlockSize() / ii.indexLayout.SlotSize()
-// 	numblocks := ii.si.RecordsOutput() / rpb
-// 	return HashIndex.SearchCost(numblocks, rpb)
-// }
+func (ii *IndexInfo) Open() (query.Index, error) {
+	return btree.NewBTreeIndex(ii.tx, ii.indexName, ii.indexLayout)
+}
+
+func (ii *IndexInfo) BlocksAccessed() int {
+	rpb := int(ii.tx.BlockSize() / ii.indexLayout.SlotSize())
+	numblocks := ii.si.RecordsOutput() / rpb
+
+	return btree.SearchCost(numblocks, rpb)
+}
 
 func (ii *IndexInfo) RecordsOutput() int {
 	return ii.si.RecordsOutput() / ii.si.DistinctValues(ii.fieldName)
