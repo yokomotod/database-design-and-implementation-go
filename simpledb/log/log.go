@@ -9,13 +9,13 @@ import (
 
 type LogIterator struct {
 	fileManager *file.Manager
-	blk         file.BlockID
+	blk         *file.BlockID
 	page        *file.Page
 	currentPos  int32
 	boundary    int32
 }
 
-func NewIterator(fileManager *file.Manager, blk file.BlockID) (*LogIterator, error) {
+func NewIterator(fileManager *file.Manager, blk *file.BlockID) (*LogIterator, error) {
 	b := make([]byte, fileManager.BlockSize())
 	page := file.NewPageWith(b)
 
@@ -34,7 +34,7 @@ func NewIterator(fileManager *file.Manager, blk file.BlockID) (*LogIterator, err
 	return it, nil
 }
 
-func (it *LogIterator) moveToBlock(blk file.BlockID) error {
+func (it *LogIterator) moveToBlock(blk *file.BlockID) error {
 	if err := it.fileManager.Read(blk, it.page); err != nil {
 		return fmt.Errorf("fileManager.Read: %w", err)
 	}
@@ -66,7 +66,7 @@ type Manager struct {
 	fileManager *file.Manager
 	logFile     string
 	logPage     *file.Page
-	currentBlk  file.BlockID
+	currentBlk  *file.BlockID
 	// LSN: log sequence number
 	latestLSN    int32
 	lastSavedLSN int32
@@ -104,15 +104,15 @@ func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
 	return lm, nil
 }
 
-func (lm *Manager) appendNewBlock() (file.BlockID, error) {
+func (lm *Manager) appendNewBlock() (*file.BlockID, error) {
 	blk, err := lm.fileManager.Append(lm.logFile)
 	if err != nil {
-		return file.BlockID{}, fmt.Errorf("fileManager.Append: %w", err)
+		return nil, fmt.Errorf("fileManager.Append: %w", err)
 	}
 
 	lm.logPage.SetInt(0, int32(lm.fileManager.BlockSize()))
 	if err := lm.fileManager.Write(blk, lm.logPage); err != nil {
-		return file.BlockID{}, fmt.Errorf("fileManager.Write: %w", err)
+		return nil, fmt.Errorf("fileManager.Write: %w", err)
 	}
 
 	return blk, nil

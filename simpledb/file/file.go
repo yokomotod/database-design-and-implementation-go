@@ -16,8 +16,8 @@ type BlockID struct {
 	Number   int32
 }
 
-func NewBlockID(filename string, blockNum int32) BlockID {
-	return BlockID{
+func NewBlockID(filename string, blockNum int32) *BlockID {
+	return &BlockID{
 		FileName: filename,
 		Number:   blockNum,
 	}
@@ -151,7 +151,7 @@ func (fm *Manager) BlockSize() int32 {
 	return fm.blockSize
 }
 
-func (fm *Manager) Read(blk BlockID, p *Page) error {
+func (fm *Manager) Read(blk *BlockID, p *Page) error {
 	fm.mux.Lock()
 	defer fm.mux.Unlock()
 
@@ -173,7 +173,7 @@ func (fm *Manager) Read(blk BlockID, p *Page) error {
 	return nil
 }
 
-func (fm *Manager) Write(blk BlockID, p *Page) error {
+func (fm *Manager) Write(blk *BlockID, p *Page) error {
 	fm.mux.Lock()
 	defer fm.mux.Unlock()
 
@@ -195,13 +195,13 @@ func (fm *Manager) Write(blk BlockID, p *Page) error {
 	return nil
 }
 
-func (fm *Manager) Append(filename string) (BlockID, error) {
+func (fm *Manager) Append(filename string) (*BlockID, error) {
 	fm.mux.Lock()
 	defer fm.mux.Unlock()
 
 	newBlockNum, err := fm.Length(filename)
 	if err != nil {
-		return BlockID{}, fmt.Errorf("fm.Length: %w", err)
+		return nil, fmt.Errorf("fm.Length: %w", err)
 	}
 
 	blk := NewBlockID(filename, newBlockNum)
@@ -209,16 +209,16 @@ func (fm *Manager) Append(filename string) (BlockID, error) {
 
 	f, err := fm.openFile(blk.FileName)
 	if err != nil {
-		return BlockID{}, fmt.Errorf("fm.openFile: %w", err)
+		return nil, fmt.Errorf("fm.openFile: %w", err)
 	}
 
 	_, err = f.Seek(int64(blk.Number)*int64(fm.blockSize), 0)
 	if err != nil {
-		return BlockID{}, fmt.Errorf("f.Seek: %w", err)
+		return nil, fmt.Errorf("f.Seek: %w", err)
 	}
 	_, err = f.Write(b)
 	if err != nil {
-		return BlockID{}, fmt.Errorf("f.Write: %w", err)
+		return nil, fmt.Errorf("f.Write: %w", err)
 	}
 
 	return blk, nil

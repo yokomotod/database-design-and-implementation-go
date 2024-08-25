@@ -76,15 +76,15 @@ func (tx *Transaction) Recover() error {
 	return nil
 }
 
-func (tx *Transaction) Pin(blk file.BlockID) error {
+func (tx *Transaction) Pin(blk *file.BlockID) error {
 	return tx.mybuffers.pin(blk)
 }
 
-func (tx *Transaction) Unpin(blk file.BlockID) {
+func (tx *Transaction) Unpin(blk *file.BlockID) {
 	tx.mybuffers.unpin(blk)
 }
 
-func (tx *Transaction) GetInt(blk file.BlockID, offset int32) (int32, error) {
+func (tx *Transaction) GetInt(blk *file.BlockID, offset int32) (int32, error) {
 	err := tx.concurMgr.SLock(blk)
 	if err != nil {
 		return 0, err
@@ -93,7 +93,7 @@ func (tx *Transaction) GetInt(blk file.BlockID, offset int32) (int32, error) {
 	return buff.Contents().GetInt(offset), nil
 }
 
-func (tx *Transaction) GetString(blk file.BlockID, offset int32) (string, error) {
+func (tx *Transaction) GetString(blk *file.BlockID, offset int32) (string, error) {
 	err := tx.concurMgr.SLock(blk)
 	if err != nil {
 		return "", err
@@ -102,7 +102,7 @@ func (tx *Transaction) GetString(blk file.BlockID, offset int32) (string, error)
 	return buff.Contents().GetString(offset), nil
 }
 
-func (tx *Transaction) SetInt(blk file.BlockID, offset, val int32, okToLog bool) error {
+func (tx *Transaction) SetInt(blk *file.BlockID, offset, val int32, okToLog bool) error {
 	err := tx.concurMgr.XLock(blk)
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func (tx *Transaction) SetInt(blk file.BlockID, offset, val int32, okToLog bool)
 	return nil
 }
 
-func (tx *Transaction) SetString(blk file.BlockID, offset int32, val string, okToLog bool) error {
+func (tx *Transaction) SetString(blk *file.BlockID, offset int32, val string, okToLog bool) error {
 	err := tx.concurMgr.XLock(blk)
 	if err != nil {
 		return err
@@ -152,10 +152,10 @@ func (tx *Transaction) Size(filename string) (int32, error) {
 	return tx.fm.Length(filename)
 }
 
-func (tx *Transaction) Append(filename string) (file.BlockID, error) {
+func (tx *Transaction) Append(filename string) (*file.BlockID, error) {
 	dummyblk := file.NewBlockID(filename, endOfFile)
 	if err := tx.concurMgr.XLock(dummyblk); err != nil {
-		return file.BlockID{}, err
+		return nil, err
 	}
 	return tx.fm.Append(filename)
 }
@@ -178,20 +178,20 @@ func nextTxNumber() int32 {
 }
 
 type BufferList struct {
-	buffers map[file.BlockID]*buffer.Buffer
-	pins    []file.BlockID
+	buffers map[*file.BlockID]*buffer.Buffer
+	pins    []*file.BlockID
 	bm      *buffer.Manager
 }
 
 func newBufferList(bm *buffer.Manager) *BufferList {
 	return &BufferList{
-		buffers: make(map[file.BlockID]*buffer.Buffer),
-		pins:    make([]file.BlockID, 0),
+		buffers: make(map[*file.BlockID]*buffer.Buffer),
+		pins:    make([]*file.BlockID, 0),
 		bm:      bm,
 	}
 }
 
-func (b *BufferList) pin(blk file.BlockID) error {
+func (b *BufferList) pin(blk *file.BlockID) error {
 	buf, err := b.bm.Pin(blk)
 	if err != nil {
 		return err
@@ -201,7 +201,7 @@ func (b *BufferList) pin(blk file.BlockID) error {
 	return nil
 }
 
-func (b *BufferList) unpin(blk file.BlockID) {
+func (b *BufferList) unpin(blk *file.BlockID) {
 	buf, ok := b.buffers[blk]
 	if !ok {
 		panic(fmt.Sprintf("block %v not pinned", blk))
@@ -226,6 +226,6 @@ func (b *BufferList) unpinAll() {
 		}
 		b.bm.Unpin(buf)
 	}
-	b.buffers = make(map[file.BlockID]*buffer.Buffer)
-	b.pins = make([]file.BlockID, 0)
+	b.buffers = make(map[*file.BlockID]*buffer.Buffer)
+	b.pins = make([]*file.BlockID, 0)
 }

@@ -9,10 +9,10 @@ import (
 )
 
 type Transaction interface {
-	Pin(blockID file.BlockID) error
-	SetString(blockID file.BlockID, offset int32, val string, logRecord bool) error
-	SetInt(blockID file.BlockID, offset int32, val int32, logRecord bool) error
-	Unpin(blockID file.BlockID)
+	Pin(blockID *file.BlockID) error
+	SetString(blockID *file.BlockID, offset int32, val string, logRecord bool) error
+	SetInt(blockID *file.BlockID, offset int32, val int32, logRecord bool) error
+	Unpin(blockID *file.BlockID)
 }
 
 type Manager struct {

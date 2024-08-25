@@ -5,16 +5,16 @@ import "simpledb/file"
 var lockTable = newLockTable()
 
 type Manager struct {
-	locks map[file.BlockID]string
+	locks map[*file.BlockID]string
 }
 
 func New() *Manager {
 	return &Manager{
-		locks: make(map[file.BlockID]string),
+		locks: make(map[*file.BlockID]string),
 	}
 }
 
-func (m *Manager) SLock(blockID file.BlockID) error {
+func (m *Manager) SLock(blockID *file.BlockID) error {
 	if m.locks[blockID] != "" {
 		return nil
 	}
@@ -27,7 +27,7 @@ func (m *Manager) SLock(blockID file.BlockID) error {
 	return nil
 }
 
-func (m *Manager) XLock(blockID file.BlockID) error {
+func (m *Manager) XLock(blockID *file.BlockID) error {
 	if m.HasXLock(blockID) {
 		return nil
 	}
@@ -53,7 +53,7 @@ func (m *Manager) Release() {
 	clear(m.locks)
 }
 
-func (m *Manager) HasXLock(blockID file.BlockID) bool {
+func (m *Manager) HasXLock(blockID *file.BlockID) bool {
 	locktype := m.locks[blockID]
 	return locktype == "X"
 }

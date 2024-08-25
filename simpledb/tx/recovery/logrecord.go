@@ -202,10 +202,10 @@ type setIntRecord struct {
 	txnum  int32
 	offset int32
 	val    int32
-	blk    file.BlockID
+	blk    *file.BlockID
 }
 
-func newSetIntRecord(txnum int32, blk file.BlockID, offset, val int32) *setIntRecord {
+func newSetIntRecord(txnum int32, blk *file.BlockID, offset, val int32) *setIntRecord {
 	return &setIntRecord{
 		txnum:  txnum,
 		offset: offset,
@@ -281,10 +281,10 @@ type setStringRecord struct {
 	txnum  int32
 	offset int32
 	val    string
-	blk    file.BlockID
+	blk    *file.BlockID
 }
 
-func newSetStringRecord(txnum int32, blk file.BlockID, offset int32, val string) *setStringRecord {
+func newSetStringRecord(txnum int32, blk *file.BlockID, offset int32, val string) *setStringRecord {
 	return &setStringRecord{
 		txnum:  txnum,
 		offset: offset,

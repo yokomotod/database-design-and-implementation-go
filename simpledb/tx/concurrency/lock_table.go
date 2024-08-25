@@ -13,18 +13,18 @@ const maxLockTime = 10 * time.Second
 var ErrTimeout = fmt.Errorf("timeout error")
 
 type LockTable struct {
-	locks map[file.BlockID]int
+	locks map[*file.BlockID]int
 	cond  *sync.Cond
 }
 
 func newLockTable() *LockTable {
 	return &LockTable{
-		locks: make(map[file.BlockID]int),
+		locks: make(map[*file.BlockID]int),
 		cond:  sync.NewCond(&sync.Mutex{}),
 	}
 }
 
-func (l *LockTable) SLock(blockID file.BlockID) error {
+func (l *LockTable) SLock(blockID *file.BlockID) error {
 	l.cond.L.Lock()
 	defer l.cond.L.Unlock()
 
@@ -42,7 +42,7 @@ func (l *LockTable) SLock(blockID file.BlockID) error {
 	return nil
 }
 
-func (l *LockTable) XLock(blockID file.BlockID) error {
+func (l *LockTable) XLock(blockID *file.BlockID) error {
 	l.cond.L.Lock()
 	defer l.cond.L.Unlock()
 
@@ -60,7 +60,7 @@ func (l *LockTable) XLock(blockID file.BlockID) error {
 	return nil
 }
 
-func (l *LockTable) Unlock(blockID file.BlockID) {
+func (l *LockTable) Unlock(blockID *file.BlockID) {
 	l.cond.L.Lock()
 	defer l.cond.L.Unlock()
 
@@ -72,11 +72,11 @@ func (l *LockTable) Unlock(blockID file.BlockID) {
 	}
 }
 
-func (l *LockTable) hasXLock(blockID file.BlockID) bool {
+func (l *LockTable) hasXLock(blockID *file.BlockID) bool {
 	return l.locks[blockID] < 0
 }
 
-func (l *LockTable) hasOtherSLocks(blockID file.BlockID) bool {
+func (l *LockTable) hasOtherSLocks(blockID *file.BlockID) bool {
 	return l.locks[blockID] > 1
 }
 

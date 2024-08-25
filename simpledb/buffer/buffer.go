@@ -10,7 +10,7 @@ import (
 type Buffer struct {
 	fileManager *file.Manager
 	contents    *file.Page
-	block       file.BlockID
+	block       *file.BlockID
 	pins        int32
 	txNum       int32
 	lsn         int32
@@ -28,7 +28,7 @@ func (b *Buffer) Contents() *file.Page {
 	return b.contents
 }
 
-func (b *Buffer) Block() file.BlockID {
+func (b *Buffer) Block() *file.BlockID {
 	return b.block
 }
 
@@ -51,7 +51,7 @@ func (b *Buffer) IsPinned() bool {
 	return b.pins > 0
 }
 
-func (b *Buffer) AssignToBlock(blk file.BlockID) error {
+func (b *Buffer) AssignToBlock(blk *file.BlockID) error {
 	b.flush()
 	b.block = blk
 	if err := b.fileManager.Read(blk, b.contents); err != nil {
@@ -125,7 +125,7 @@ func (bm *Manager) Unpin(buff *Buffer) {
 
 var ErrBufferAbort = errors.New("buffer abort")
 
-func (bm *Manager) Pin(blk file.BlockID) (*Buffer, error) {
+func (bm *Manager) Pin(blk *file.BlockID) (*Buffer, error) {
 	bm.mux.Lock()
 	defer bm.mux.Unlock()
 
@@ -140,7 +140,7 @@ func (bm *Manager) Pin(blk file.BlockID) (*Buffer, error) {
 	return buff, nil
 }
 
-func (bm *Manager) tryToPin(blk file.BlockID) (*Buffer, error) {
+func (bm *Manager) tryToPin(blk *file.BlockID) (*Buffer, error) {
 	buff := bm.findExistingBuffer(blk)
 
 	if buff == nil {
@@ -159,7 +159,7 @@ func (bm *Manager) tryToPin(blk file.BlockID) (*Buffer, error) {
 	return buff, nil
 }
 
-func (bm *Manager) findExistingBuffer(blk file.BlockID) *Buffer {
+func (bm *Manager) findExistingBuffer(blk *file.BlockID) *Buffer {
 	for _, buff := range bm.bufferPool {
 		b := buff.Block()
 		if b == blk {
