@@ -20,7 +20,7 @@ func (d SimpleDBDriver) Open(name string) (driver.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	conn := &Connection{db: db, transaction: nil, planner: db.Planner()}
+	conn := NewConnection(db, db.Planner())
 	fmt.Println("database opened")
 	return conn, nil
 }
