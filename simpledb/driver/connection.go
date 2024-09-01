@@ -15,6 +15,10 @@ type Connection struct {
 	planner     *plan.Planner
 }
 
+func NewConnection(db *server.SimpleDB, planner *plan.Planner) *Connection {
+	return &Connection{db: db, transaction: nil, planner: planner}
+}
+
 func (conn *Connection) Ping() error {
 	return nil
 }
@@ -36,7 +40,7 @@ func (conn *Connection) ExecContext(ctx context.Context, query string, args []dr
 	if err != nil {
 		return nil, err
 	}
-	return &Result{rowsAffected: rows}, nil
+	return NewResult(rows), nil
 }
 
 func (conn *Connection) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
@@ -48,7 +52,7 @@ func (conn *Connection) QueryContext(ctx context.Context, query string, args []d
 	if err != nil {
 		return nil, err
 	}
-	return &Rows{schema: *plan.Schema(), scan: scan}, nil
+	return NewRows(plan.Schema(), scan), nil
 }
 
 func (conn *Connection) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
@@ -56,13 +60,17 @@ func (conn *Connection) BeginTx(ctx context.Context, opts driver.TxOptions) (dri
 	if err != nil {
 		return nil, err
 	}
-	conn.transaction = &TransactionWithConnection{tx: tx, conn: conn}
+	conn.transaction = NewTransactionWithConnection(tx, conn)
 	return conn.transaction, nil
 }
 
 type TransactionWithConnection struct {
 	tx   *tx.Transaction
 	conn *Connection
+}
+
+func NewTransactionWithConnection(tx *tx.Transaction, conn *Connection) *TransactionWithConnection {
+	return &TransactionWithConnection{tx: tx, conn: conn}
 }
 
 func (txc *TransactionWithConnection) Commit() error {

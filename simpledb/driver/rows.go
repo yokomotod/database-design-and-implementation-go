@@ -9,8 +9,12 @@ import (
 )
 
 type Rows struct {
-	schema record.Schema
+	schema *record.Schema
 	scan   query.Scan
+}
+
+func NewRows(schema *record.Schema, scan query.Scan) *Rows {
+	return &Rows{schema: schema, scan: scan}
 }
 
 func (r *Rows) Columns() []string {
