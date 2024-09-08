@@ -13,7 +13,7 @@ var mux = &sync.Mutex{}
 type TempTable struct {
 	tx        *tx.Transaction
 	TableName string
-	layout    *record.Layout
+	Layout    *record.Layout
 }
 
 func NewTempTable(tx *tx.Transaction, sch *record.Schema) *TempTable {
@@ -22,12 +22,12 @@ func NewTempTable(tx *tx.Transaction, sch *record.Schema) *TempTable {
 	return &TempTable{
 		tx:        tx,
 		TableName: newTableName(),
-		layout:    layout,
+		Layout:    layout,
 	}
 }
 
 func (tt *TempTable) Open() (UpdateScan, error) {
-	scan, err := NewTableScan(tt.tx, tt.TableName, tt.layout)
+	scan, err := NewTableScan(tt.tx, tt.TableName, tt.Layout)
 	if err != nil {
 		return nil, fmt.Errorf("tt.Open: %w", err)
 	}
