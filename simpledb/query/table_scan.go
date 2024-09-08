@@ -57,7 +57,7 @@ func (ts *TableScan) Next() (bool, error) {
 		if ts.currentSlot >= 0 {
 			break
 		}
-		atLastBlock, err := ts.atLastBlock()
+		atLastBlock, err := ts.AtLastBlock()
 		if err != nil {
 			return false, err
 		}
@@ -147,7 +147,7 @@ func (ts *TableScan) Insert() error {
 	}
 	ts.currentSlot = nextSlot
 	for ts.currentSlot < 0 {
-		atLastBlock, err := ts.atLastBlock()
+		atLastBlock, err := ts.AtLastBlock()
 		if err != nil {
 			return err
 		}
@@ -220,7 +220,7 @@ func (ts *TableScan) moveToNewBlock() error {
 	return nil
 }
 
-func (ts *TableScan) atLastBlock() (bool, error) {
+func (ts *TableScan) AtLastBlock() (bool, error) {
 	fileSize, err := ts.tx.Size(ts.filename)
 	if err != nil {
 		return false, err
