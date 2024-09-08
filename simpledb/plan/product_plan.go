@@ -32,15 +32,15 @@ func (p *ProductPlan) Open() (query.Scan, error) {
 	return query.NewProductScan(s1, s2)
 }
 
-func (p *ProductPlan) BlocksAccessed() int {
+func (p *ProductPlan) BlocksAccessed() int32 {
 	return p.p1.BlocksAccessed() + (p.p1.RecordsOutput() * p.p2.BlocksAccessed())
 }
 
-func (p *ProductPlan) RecordsOutput() int {
+func (p *ProductPlan) RecordsOutput() int32 {
 	return p.p1.RecordsOutput() * p.p2.RecordsOutput()
 }
 
-func (p *ProductPlan) DistinctValues(fieldName string) int {
+func (p *ProductPlan) DistinctValues(fieldName string) int32 {
 	if p.p1.Schema().HasField(fieldName) {
 		return p.p1.DistinctValues(fieldName)
 	} else {

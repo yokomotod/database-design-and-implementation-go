@@ -29,15 +29,15 @@ func (p *ProjectPlan) Open() (query.Scan, error) {
 	return query.NewProjectScan(scan, p.schema.Fields()), nil
 }
 
-func (p *ProjectPlan) BlocksAccessed() int {
+func (p *ProjectPlan) BlocksAccessed() int32 {
 	return p.plan.BlocksAccessed()
 }
 
-func (p *ProjectPlan) RecordsOutput() int {
+func (p *ProjectPlan) RecordsOutput() int32 {
 	return p.plan.RecordsOutput()
 }
 
-func (p *ProjectPlan) DistinctValues(fieldName string) int {
+func (p *ProjectPlan) DistinctValues(fieldName string) int32 {
 	return p.plan.DistinctValues(fieldName)
 }
 

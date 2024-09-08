@@ -49,19 +49,19 @@ func (gp *GroupByPlan) Open() (query.Scan, error) {
 	return query.NewGroupByScan(ss, gp.groupFields, gp.aggFns), nil
 }
 
-func (gp *GroupByPlan) BlocksAccessed() int {
+func (gp *GroupByPlan) BlocksAccessed() int32 {
 	return gp.plan.BlocksAccessed()
 }
 
-func (gp *GroupByPlan) RecordsOutput() int {
-	numgroups := 1
+func (gp *GroupByPlan) RecordsOutput() int32 {
+	numgroups := int32(1)
 	for _, fldname := range gp.groupFields {
 		numgroups *= gp.plan.DistinctValues(fldname)
 	}
 	return numgroups
 }
 
-func (gp *GroupByPlan) DistinctValues(fieldName string) int {
+func (gp *GroupByPlan) DistinctValues(fieldName string) int32 {
 	if gp.schema.HasField(fieldName) {
 		return gp.plan.DistinctValues(fieldName)
 	}

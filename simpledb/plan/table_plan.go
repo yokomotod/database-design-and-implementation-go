@@ -36,15 +36,15 @@ func (p *TablePlan) Open() (query.Scan, error) {
 	return query.NewTableScan(p.tx, p.tableName, p.layout)
 }
 
-func (p *TablePlan) BlocksAccessed() int {
+func (p *TablePlan) BlocksAccessed() int32 {
 	return p.statInfo.BlocksAccessed()
 }
 
-func (p *TablePlan) RecordsOutput() int {
+func (p *TablePlan) RecordsOutput() int32 {
 	return p.statInfo.RecordsOutput()
 }
 
-func (p *TablePlan) DistinctValues(fieldName string) int {
+func (p *TablePlan) DistinctValues(fieldName string) int32 {
 	return p.statInfo.DistinctValues(fieldName)
 }
 

@@ -54,16 +54,16 @@ func (sp *SortPlan) Open() (query.Scan, error) {
 	return sc, nil
 }
 
-func (sp *SortPlan) BlocksAccessed() int {
+func (sp *SortPlan) BlocksAccessed() int32 {
 	mp := NewMaterializePlan(sp.tx, sp.plan)
 	return mp.BlocksAccessed()
 }
 
-func (sp *SortPlan) RecordsOutput() int {
+func (sp *SortPlan) RecordsOutput() int32 {
 	return sp.plan.RecordsOutput()
 }
 
-func (sp *SortPlan) DistinctValues(fieldName string) int {
+func (sp *SortPlan) DistinctValues(fieldName string) int32 {
 	return sp.plan.DistinctValues(fieldName)
 }
 
