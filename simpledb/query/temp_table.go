@@ -26,7 +26,7 @@ func NewTempTable(tx *tx.Transaction, sch *record.Schema) *TempTable {
 	}
 }
 
-func (tt *TempTable) Open() (UpdateScan, error) {
+func (tt *TempTable) Open() (*TableScan, error) {
 	scan, err := NewTableScan(tt.tx, tt.TableName, tt.layout)
 	if err != nil {
 		return nil, fmt.Errorf("tt.Open: %w", err)
