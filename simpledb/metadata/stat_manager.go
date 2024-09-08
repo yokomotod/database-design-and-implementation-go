@@ -8,23 +8,23 @@ import (
 )
 
 type StatInfo struct {
-	numBlocks int
-	numRecs   int
+	numBlocks int32
+	numRecs   int32
 }
 
-func NewStatInfo(numBlocks int, numRecs int) *StatInfo {
+func NewStatInfo(numBlocks, numRecs int32) *StatInfo {
 	return &StatInfo{numBlocks, numRecs}
 }
 
-func (si *StatInfo) BlocksAccessed() int {
+func (si *StatInfo) BlocksAccessed() int32 {
 	return si.numBlocks
 }
 
-func (si *StatInfo) RecordsOutput() int {
+func (si *StatInfo) RecordsOutput() int32 {
 	return si.numRecs
 }
 
-func (si *StatInfo) DistinctValues(fieldName string) int {
+func (si *StatInfo) DistinctValues(fieldName string) int32 {
 	return 1 + (si.numRecs / 3) // This is wildly inaccurate.
 }
 
@@ -109,8 +109,8 @@ func (sm *StatManager) refreshStatistics(tx *tx.Transaction) error {
 }
 
 func (sm *StatManager) calcTableStats(tableName string, layout *record.Layout, tx *tx.Transaction) (*StatInfo, error) {
-	numRecs := 0
-	numBlocks := 0
+	numRecs := int32(0)
+	numBlocks := int32(0)
 	ts, err := query.NewTableScan(tx, tableName, layout)
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func (sm *StatManager) calcTableStats(tableName string, layout *record.Layout, t
 		if err != nil {
 			return nil, err
 		}
-		numBlocks = int(rid.BlockNumber()) + 1
+		numBlocks = rid.BlockNumber() + 1
 	}
 	return NewStatInfo(numBlocks, numRecs), nil
 }

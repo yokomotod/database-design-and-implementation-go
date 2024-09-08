@@ -38,15 +38,15 @@ func (p *IndexJoinPlan) Open() (query.Scan, error) {
 	return query.NewIndexJoinScan(scan, idx, p.joinField, ts)
 }
 
-func (p *IndexJoinPlan) BlocksAccessed() int {
+func (p *IndexJoinPlan) BlocksAccessed() int32 {
 	return p.plan1.BlocksAccessed() + (p.plan1.RecordsOutput() * p.indexInfo.BlocksAccessed()) + p.RecordsOutput()
 }
 
-func (p *IndexJoinPlan) RecordsOutput() int {
+func (p *IndexJoinPlan) RecordsOutput() int32 {
 	return p.plan1.RecordsOutput() * p.indexInfo.RecordsOutput()
 }
 
-func (p *IndexJoinPlan) DistinctValues(fieldName string) int {
+func (p *IndexJoinPlan) DistinctValues(fieldName string) int32 {
 	if p.plan1.Schema().HasField(fieldName) {
 		return p.plan1.DistinctValues(fieldName)
 	}

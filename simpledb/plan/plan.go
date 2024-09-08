@@ -7,8 +7,8 @@ import (
 
 type Plan interface {
 	Open() (query.Scan, error)
-	BlocksAccessed() int
-	RecordsOutput() int
-	DistinctValues(fieldName string) int
+	BlocksAccessed() int32
+	RecordsOutput() int32
+	DistinctValues(fieldName string) int32
 	Schema() *record.Schema
 }

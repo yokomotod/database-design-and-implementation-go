@@ -35,19 +35,19 @@ func (ii *IndexInfo) Open() (query.Index, error) {
 	return btree.NewBTreeIndex(ii.tx, ii.indexName, ii.indexLayout)
 }
 
-func (ii *IndexInfo) BlocksAccessed() int {
-	rpb := int(ii.tx.BlockSize() / ii.indexLayout.SlotSize())
+func (ii *IndexInfo) BlocksAccessed() int32 {
+	rpb := int32(ii.tx.BlockSize() / ii.indexLayout.SlotSize())
 	numblocks := ii.si.RecordsOutput() / rpb
 
 	return btree.SearchCost(numblocks, rpb)
 }
 
-func (ii *IndexInfo) RecordsOutput() int {
+func (ii *IndexInfo) RecordsOutput() int32 {
 	return ii.si.RecordsOutput() / ii.si.DistinctValues(ii.fieldName)
 }
 
-func (ii *IndexInfo) DistinctValues(fname string) int {
-	var result int
+func (ii *IndexInfo) DistinctValues(fname string) int32 {
+	var result int32
 	if ii.fieldName == fname {
 		result = 1
 	} else {

@@ -58,17 +58,17 @@ func (mjp *MergeJoinPlan) Open() (query.Scan, error) {
 	return query.NewMergeJoinScan(ss1, ss2, mjp.fldName1, mjp.fldName2), nil
 }
 
-func (mjp *MergeJoinPlan) BlocksAccessed() int {
+func (mjp *MergeJoinPlan) BlocksAccessed() int32 {
 	return mjp.p1.BlocksAccessed() + mjp.p2.BlocksAccessed()
 }
 
-func (mjp *MergeJoinPlan) RecordsOutput() int {
+func (mjp *MergeJoinPlan) RecordsOutput() int32 {
 	maxVals := max(mjp.p1.DistinctValues(mjp.fldName1),
 		mjp.p2.DistinctValues(mjp.fldName2))
 	return mjp.p1.RecordsOutput() * mjp.p2.RecordsOutput() / maxVals
 }
 
-func (mjp *MergeJoinPlan) DistinctValues(fieldName string) int {
+func (mjp *MergeJoinPlan) DistinctValues(fieldName string) int32 {
 	if mjp.p1.Schema().HasField(fieldName) {
 		return mjp.p1.DistinctValues(fieldName)
 	}
