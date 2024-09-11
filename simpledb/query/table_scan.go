@@ -5,6 +5,7 @@ import (
 	"simpledb/file"
 	"simpledb/record"
 	"simpledb/tx"
+	"simpledb/util/logger"
 )
 
 var ErrUnkownFieldType = errors.New("unknown field type")
@@ -13,6 +14,8 @@ var _ Scan = (*TableScan)(nil)
 var _ UpdateScan = (*TableScan)(nil)
 
 type TableScan struct {
+	logger *logger.Logger
+
 	tx          *tx.Transaction
 	layout      *record.Layout
 	rp          *record.RecordPage
@@ -21,16 +24,22 @@ type TableScan struct {
 }
 
 func NewTableScan(tx *tx.Transaction, tableName string, layout *record.Layout) (*TableScan, error) {
-	tableScan := &TableScan{tx, layout, nil, tableName + ".tbl", -1}
+	logger := logger.New("query.TableScan", logger.Debug)
+
+	tableScan := &TableScan{logger, tx, layout, nil, tableName + ".tbl", -1}
+
+	logger.Debugf("NewTableScan(): tx.Size(%q)", tableScan.filename)
 	size, err := tx.Size(tableScan.filename)
 	if err != nil {
 		return nil, err
 	}
 	if size == 0 {
+		logger.Debugf("NewTableScan(): size=0, moveToNewBlock()")
 		if err := tableScan.moveToNewBlock(); err != nil {
 			return nil, err
 		}
 	} else {
+		logger.Debugf("NewTableScan(): size=%d, moveToBlock(0)", size)
 		if err := tableScan.moveToBlock(0); err != nil {
 			return nil, err
 		}
@@ -104,6 +113,7 @@ func (ts *TableScan) HasField(fieldName string) bool {
 
 func (ts *TableScan) Close() {
 	if ts.rp != nil {
+		ts.logger.Debugf("Close(): Unpin(%+v)", ts.rp.Block())
 		ts.tx.Unpin(ts.rp.Block())
 	}
 }
@@ -145,17 +155,21 @@ func (ts *TableScan) Insert() error {
 	if err != nil {
 		return err
 	}
+	ts.logger.Tracef("Insert(): currentSlot=%d, nextSlot=%d", ts.currentSlot, nextSlot)
 	ts.currentSlot = nextSlot
 	for ts.currentSlot < 0 {
+		ts.logger.Debugf("Insert(): nextSlot=%d", nextSlot)
 		atLastBlock, err := ts.AtLastBlock()
 		if err != nil {
 			return err
 		}
 		if atLastBlock {
+			ts.logger.Debugf("Insert(): atLastBlock=true, moveToNewBlock()")
 			if err := ts.moveToNewBlock(); err != nil {
 				return err
 			}
 		} else {
+			ts.logger.Debugf("Insert(): atLastBlock=false, moveToBlock(%d)", ts.rp.Block().Number+1)
 			if err := ts.moveToBlock(ts.rp.Block().Number + 1); err != nil {
 				return err
 			}
@@ -221,6 +235,7 @@ func (ts *TableScan) moveToNewBlock() error {
 }
 
 func (ts *TableScan) AtLastBlock() (bool, error) {
+	ts.logger.Debugf("AtLastBlock(): tx.Size(%q)", ts.filename)
 	fileSize, err := ts.tx.Size(ts.filename)
 	if err != nil {
 		return false, err

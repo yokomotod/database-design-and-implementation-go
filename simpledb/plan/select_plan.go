@@ -29,6 +29,7 @@ func (p *SelectPlan) BlocksAccessed() int32 {
 }
 
 func (p *SelectPlan) RecordsOutput() int32 {
+	// fmt.Printf("SelectPlan.RecordsOutput: %d / %d = %d\n", p.plan.RecordsOutput(), p.predicate.ReductionFactor(p.plan), p.plan.RecordsOutput()/p.predicate.ReductionFactor(p.plan))
 	return p.plan.RecordsOutput() / p.predicate.ReductionFactor(p.plan)
 }
 

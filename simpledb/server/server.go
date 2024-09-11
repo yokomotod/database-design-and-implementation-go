@@ -29,6 +29,7 @@ func NewSimpleDB(dbDir string, blockSize, bufferSize int32) (*SimpleDB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("file.NewManager: %w", err)
 	}
+	fileManager.Logger.LogFile = logFile
 
 	logManager, err := log.NewManager(fileManager, logFile)
 	if err != nil {

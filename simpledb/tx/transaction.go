@@ -84,12 +84,12 @@ func (tx *Transaction) Recover() error {
 }
 
 func (tx *Transaction) Pin(blk file.BlockID) error {
-	tx.logger.Tracef("Pin(%v)", blk)
+	tx.logger.Tracef("Pin(%+v)", blk)
 	return tx.mybuffers.pin(blk)
 }
 
 func (tx *Transaction) Unpin(blk file.BlockID) {
-	tx.logger.Tracef("Unpin(%v)", blk)
+	tx.logger.Tracef("Unpin(%+v)", blk)
 	tx.mybuffers.unpin(blk)
 }
 
@@ -162,6 +162,7 @@ func (tx *Transaction) Size(filename string) (int32, error) {
 }
 
 func (tx *Transaction) Append(filename string) (file.BlockID, error) {
+	tx.logger.Tracef("Append(%q)", filename)
 	dummyblk := file.NewBlockID(filename, endOfFile)
 	if err := tx.concurMgr.XLock(dummyblk); err != nil {
 		return file.BlockID{}, err
@@ -172,7 +173,7 @@ func (tx *Transaction) Append(filename string) (file.BlockID, error) {
 		return file.BlockID{}, err
 	}
 
-	tx.logger.Tracef("write block from append %+v", blk)
+	tx.logger.Tracef("wrote block from append %+v", blk)
 
 	return blk, nil
 }
@@ -220,7 +221,7 @@ func (b *BufferList) pin(blk file.BlockID) error {
 func (b *BufferList) unpin(blk file.BlockID) {
 	buf, ok := b.buffers[blk]
 	if !ok {
-		panic(fmt.Sprintf("block %v not pinned", blk))
+		panic(fmt.Sprintf("block %+v not pinned", blk))
 	}
 	b.bm.Unpin(buf)
 	for i, p := range b.pins {
@@ -238,7 +239,7 @@ func (b *BufferList) unpinAll() {
 	for _, blk := range b.pins {
 		buf, ok := b.buffers[blk]
 		if !ok {
-			panic(fmt.Sprintf("block %v not pinned", blk))
+			panic(fmt.Sprintf("block %+v not pinned", blk))
 		}
 		b.bm.Unpin(buf)
 	}

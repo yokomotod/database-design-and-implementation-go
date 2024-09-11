@@ -19,12 +19,14 @@ func TestStudent(t *testing.T) {
 
 	planner := simpleDB.Planner()
 
+	t.Log("create table student (sid int, sname varchar(10), majorid int, gradyear int)")
 	_, err = planner.ExecuteUpdate("create table student (sid int, sname varchar(10), majorid int, gradyear int)", tx)
 	if err != nil {
 		t.Fatalf("failed to create table: %v", err)
 	}
 	t.Logf("created table student")
 
+	t.Log("insert into student(sid, sname, majorid) values (1, 'joe', 10, 2021)")
 	cnt, err := planner.ExecuteUpdate("insert into student(sid, sname, majorid) values (1, 'joe', 10, 2021)", tx)
 	if err != nil {
 		t.Fatalf("failed to insert into table: %v", err)
@@ -34,6 +36,7 @@ func TestStudent(t *testing.T) {
 		t.Errorf("inserted count: want: 1, got: %d", cnt)
 	}
 
+	t.Log("insert into student(sid, sname, majorid) values (2, 'xxx', 20, 2020)")
 	cnt, err = planner.ExecuteUpdate("insert into student(sid, sname, majorid) values (2, 'xxx', 20, 2020)", tx)
 	if err != nil {
 		t.Fatalf("failed to insert into table: %v", err)
@@ -43,6 +46,7 @@ func TestStudent(t *testing.T) {
 		t.Errorf("inserted count: want: 1, got: %d", cnt)
 	}
 
+	t.Log("update student set sname = 'amy' where sid = 2")
 	cnt, err = planner.ExecuteUpdate("update student set sname = 'amy' where sid = 2", tx)
 	if err != nil {
 		t.Fatalf("failed to update table: %v", err)
@@ -52,11 +56,13 @@ func TestStudent(t *testing.T) {
 	}
 
 	// this is to be deleted by the following statements
+	t.Log("insert into student(sid, sname, majorid) values (3, 'tbd', 20, 2020)")
 	_, err = planner.ExecuteUpdate("insert into student(sid, sname, majorid) values (3, 'tbd', 20, 2020)", tx)
 	if err != nil {
 		t.Fatalf("failed to insert into table: %v", err)
 	}
 
+	t.Log("delete from student where sid = 99")
 	cnt, err = planner.ExecuteUpdate("delete from student where sid = 99", tx)
 	if err != nil {
 		t.Fatalf("failed to delete from table: %v", err)
@@ -65,6 +71,7 @@ func TestStudent(t *testing.T) {
 		t.Errorf("deleted count: want: 0, got: %d", cnt)
 	}
 
+	t.Log("delete from student where sid = 3")
 	cnt, err = planner.ExecuteUpdate("delete from student where sid = 3", tx)
 	if err != nil {
 		t.Fatalf("failed to delete from table: %v", err)
@@ -73,11 +80,13 @@ func TestStudent(t *testing.T) {
 		t.Errorf("deleted count: want: 1, got: %d", cnt)
 	}
 
+	t.Log("select sid, sname from student")
 	plan, err := planner.CreateQueryPlan("select sid, sname from student", tx)
 	if err != nil {
 		t.Fatalf("failed to create query plan: %v", err)
 	}
 
+	t.Log("open scan")
 	sc, err := plan.Open()
 	if err != nil {
 		t.Fatalf("failed to open scan: %v", err)
@@ -94,6 +103,7 @@ func TestStudent(t *testing.T) {
 	got := make([]student, 0, 2)
 
 	for {
+		t.Log("scan.next")
 		next, err := sc.Next()
 		if err != nil {
 			t.Fatalf("failed to get next: %v", err)

@@ -37,6 +37,7 @@ func (p *ProductPlan) BlocksAccessed() int32 {
 }
 
 func (p *ProductPlan) RecordsOutput() int32 {
+	// fmt.Printf("ProductPlan.RecordsOutput: %d * %d = %d\n", p.p1.RecordsOutput(), p.p2.RecordsOutput(), p.p1.RecordsOutput()*p.p2.RecordsOutput())
 	return p.p1.RecordsOutput() * p.p2.RecordsOutput()
 }
 

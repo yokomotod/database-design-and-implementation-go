@@ -4,6 +4,7 @@ import (
 	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
+	"simpledb/util/logger"
 	"sync"
 )
 
@@ -25,10 +26,13 @@ func (si *StatInfo) RecordsOutput() int32 {
 }
 
 func (si *StatInfo) DistinctValues(fieldName string) int32 {
+	// fmt.Printf("si.DistinctValues(%q) = %d\n", fieldName, 1+(si.numRecs/3))
 	return 1 + (si.numRecs / 3) // This is wildly inaccurate.
 }
 
 type StatManager struct {
+	logger *logger.Logger
+
 	tableManager *TableManager
 	tableStats   map[string]*StatInfo
 	numCalls     int
@@ -36,7 +40,9 @@ type StatManager struct {
 }
 
 func NewStatManager(tableManager *TableManager, tx *tx.Transaction) (*StatManager, error) {
-	statManager := &StatManager{tableManager, nil, 0, &sync.Mutex{}}
+	logger := logger.New("metadata.StatManager", logger.Trace)
+
+	statManager := &StatManager{logger, tableManager, nil, 0, &sync.Mutex{}}
 	err := statManager.refreshStatistics(tx)
 	if err != nil {
 		return nil, err
@@ -51,6 +57,8 @@ func (sm *StatManager) GetStatInfo(tableName string, layout *record.Layout, tx *
 	// 出される心配はないのでロックは取らない。
 	sm.mux.Lock()
 	defer sm.mux.Unlock()
+
+	sm.logger.Tracef("GetStatInfo(%q)", tableName)
 
 	sm.numCalls++
 	if sm.numCalls > 100 {
@@ -71,6 +79,8 @@ func (sm *StatManager) GetStatInfo(tableName string, layout *record.Layout, tx *
 }
 
 func (sm *StatManager) refreshStatistics(tx *tx.Transaction) error {
+	sm.logger.Tracef("refreshStatistics()")
+
 	sm.tableStats = make(map[string]*StatInfo)
 	sm.numCalls = 0
 	tableCatalogLayout, err := sm.tableManager.GetLayout(tableCatalogTableName, tx)
@@ -109,6 +119,8 @@ func (sm *StatManager) refreshStatistics(tx *tx.Transaction) error {
 }
 
 func (sm *StatManager) calcTableStats(tableName string, layout *record.Layout, tx *tx.Transaction) (*StatInfo, error) {
+	sm.logger.Tracef("calcTableStats(%q)", tableName)
+
 	numRecs := int32(0)
 	numBlocks := int32(0)
 	ts, err := query.NewTableScan(tx, tableName, layout)

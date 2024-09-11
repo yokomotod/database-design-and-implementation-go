@@ -66,6 +66,7 @@ func (b *Buffer) IsPinned() bool {
 }
 
 func (b *Buffer) AssignToBlock(blk file.BlockID) error {
+	b.logger.Tracef("AssignToBlock(): buffer[%s] old=%+v new=%+v", b.debugName, b.block, blk)
 	b.flush()
 	b.block = blk
 
@@ -93,18 +94,25 @@ func (b *Buffer) flush() error {
 }
 
 type Manager struct {
+	logger *logger.Logger
+
 	bufferPool   []*Buffer
 	numAvailable int32
 	mux          *sync.Mutex
 }
 
 func NewManager(fm *file.Manager, buffSize int32) *Manager {
+	logger := logger.New("buffer.Manager", logger.Trace)
+
+	logger.Tracef("NewManager(): bufferPool=%d", buffSize)
 	bufferPool := make([]*Buffer, buffSize)
 	for i := range bufferPool {
 		bufferPool[i] = NewBuffer(fm, fmt.Sprintf("%d/%d", i, buffSize))
 	}
 
 	return &Manager{
+		logger: logger,
+
 		bufferPool:   bufferPool,
 		numAvailable: buffSize,
 		mux:          &sync.Mutex{},
@@ -136,6 +144,7 @@ func (bm *Manager) Unpin(buff *Buffer) {
 	buff.Unpin()
 	if !buff.IsPinned() {
 		bm.numAvailable++
+		bm.logger.Tracef("Unpin(): numAvailable=%d/%d", bm.numAvailable, len(bm.bufferPool))
 		// TODO: notifyAll();
 	}
 }
@@ -171,6 +180,7 @@ func (bm *Manager) tryToPin(blk file.BlockID) (*Buffer, error) {
 	}
 	if !buff.IsPinned() {
 		bm.numAvailable--
+		bm.logger.Tracef("tryToPin(): numAvailable=%d/%d", bm.numAvailable, len(bm.bufferPool))
 	}
 	buff.Pin()
 	return buff, nil

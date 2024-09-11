@@ -77,8 +77,8 @@ type Manager struct {
 }
 
 func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
-	logger := logger.New("log.Manager", logger.Trace)
-	logger.Tracef("NewManager(%s)", logFile)
+	logger := logger.New("log.Manager", logger.Debug)
+	logger.Tracef("NewManager(%q)", logFile)
 
 	b := make([]byte, fileManager.BlockSize())
 	logPage := file.NewPageWith(b)
@@ -98,6 +98,7 @@ func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
 	}
 
 	if logSize == 0 {
+		logger.Tracef("NewManager(%q): logSize == 0, appendNewBlock", logFile)
 		lm.currentBlk, err = lm.appendNewBlock()
 		if err != nil {
 			return nil, fmt.Errorf("lm.appendNewBlock: %w", err)
@@ -131,6 +132,7 @@ func (lm *Manager) Flush(lsn int32) {
 		return
 	}
 
+	lm.logger.Tracef("Flush(): lsn(%d) <= lastSavedLSN(%d)", lsn, lm.lastSavedLSN)
 	lm.flush()
 }
 
@@ -156,8 +158,11 @@ func (lm *Manager) Append(logRecord []byte) (int32, error) {
 	recordSize := int32(len(logRecord))
 	bytesNeeded := recordSize + file.Int32Bytes
 
+	lm.logger.Tracef("Append(): check boundary(%d) - bytesNeeded(%d) < Int32Bytes(%d)", boundary, bytesNeeded, file.Int32Bytes)
 	if boundary-bytesNeeded < file.Int32Bytes { // It doesn't fit
+		lm.logger.Tracef("Append(): flush()")
 		lm.flush() // so move to the next block.
+		lm.logger.Tracef("Append(): appendNewBlock()")
 		currentBlk, err := lm.appendNewBlock()
 		if err != nil {
 			return 0, fmt.Errorf("lm.appendNewBlock: %w", err)
