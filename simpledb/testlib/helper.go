@@ -3,6 +3,7 @@ package testlib
 import (
 	"fmt"
 	"simpledb/server"
+	"slices"
 	"testing"
 )
 
@@ -155,14 +156,21 @@ func InsertLargeTestData(t *testing.T, simpledb *server.SimpleDB) error {
 		studentid int
 	}{}
 
+	eid := 0
 	for _, s := range students {
-		for i := 0; i < 10; i++ {
+		for j := 0; j < 10; j++ {
 			enrolls = append(enrolls, struct {
 				eid       int
 				studentid int
-			}{eid: s.sid*100 + i, studentid: s.sid})
+			}{
+				eid:       eid,
+				studentid: s.sid,
+			})
+			eid++
 		}
 	}
+	// reverse order
+	slices.Reverse(enrolls)
 
 	for _, d := range enrolls {
 		query := fmt.Sprintf("insert into enroll(eid, studentid) values(%d, %d)", d.eid, d.studentid)

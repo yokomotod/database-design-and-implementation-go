@@ -6,20 +6,24 @@ import (
 	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
+	"simpledb/util/logger"
 	"slices"
 )
 
 var _ Plan = (*SortPlan)(nil)
 
 type MultibufferSortPlan struct {
+	logger *logger.Logger
+
 	plan   Plan
 	tx     *tx.Transaction
 	schema *record.Schema
 	comp   *query.RecordComparator
 }
 
-func NewMultibufferSortPlan(tx *tx.Transaction, plan Plan, sortFields []string) (*SortPlan, error) {
-	return &SortPlan{
+func NewMultibufferSortPlan(tx *tx.Transaction, plan Plan, sortFields []string) (*MultibufferSortPlan, error) {
+	return &MultibufferSortPlan{
+		logger: logger.New("plan.MultibufferSortPlan", logger.Trace),
 		plan:   plan,
 		tx:     tx,
 		schema: plan.Schema(),
@@ -72,6 +76,7 @@ func (sp *MultibufferSortPlan) multibufferSplitIntoRuns(src query.Scan) ([]*quer
 	size := sp.BlocksAccessed()
 	available := sp.tx.AvailableBuffers()
 	numBuffs := query.BufferNeedsBestRoot(available, size)
+	sp.logger.Tracef("multibufferSplitIntoRuns(): numBuffs: %d", numBuffs)
 
 	temps := make([]*query.TempTable, 0)
 	err := src.BeforeFirst()
@@ -97,6 +102,10 @@ func (sp *MultibufferSortPlan) multibufferSplitIntoRuns(src query.Scan) ([]*quer
 	valsList := make([]map[string]*query.Constant, 0)
 
 	for {
+		if len(temps) >= 10 {
+			panic("too many valsList")
+		}
+		sp.logger.Tracef("multibufferSplitIntoRuns(): copyDummyAndReturnVals")
 		next, vals, err := sp.copyDummyAndReturnVals(src, currentScan)
 		if err != nil {
 			return nil, fmt.Errorf("sp.copy: %w", err)
@@ -108,6 +117,7 @@ func (sp *MultibufferSortPlan) multibufferSplitIntoRuns(src query.Scan) ([]*quer
 		}
 
 		atLastBlock, err := currentScan.AtLastBlock()
+		sp.logger.Tracef("multibufferSplitIntoRuns(): AtLastBlock: %t", atLastBlock)
 		if err != nil {
 			return nil, fmt.Errorf("currentScan.AtLastBlock: %w", err)
 		}
@@ -116,8 +126,17 @@ func (sp *MultibufferSortPlan) multibufferSplitIntoRuns(src query.Scan) ([]*quer
 			continue
 		}
 
+		canInsert, err := currentScan.CanInsertCurrentBlock()
+		if err != nil {
+			return nil, fmt.Errorf("currentScan.CanInsertCurrentBlock: %w", err)
+		}
+		sp.logger.Tracef("multibufferSplitIntoRuns(): canInsert: %t, usedBuffs: %d", canInsert, usedBuffs)
+		if canInsert {
+			continue
+		}
+
+		usedBuffs++
 		if usedBuffs < numBuffs {
-			usedBuffs++
 			continue
 		}
 
@@ -130,8 +149,8 @@ func (sp *MultibufferSortPlan) multibufferSplitIntoRuns(src query.Scan) ([]*quer
 		temps = append(temps, sortedTemp)
 
 		valsList = make([]map[string]*query.Constant, 0)
+		usedBuffs = 1
 		currentTemp = query.NewTempTable(sp.tx, sp.schema)
-		temps = append(temps, currentTemp)
 		currentScan, err = currentTemp.Open()
 		if err != nil {
 			return nil, err
@@ -145,6 +164,8 @@ func (sp *MultibufferSortPlan) multibufferSplitIntoRuns(src query.Scan) ([]*quer
 		return nil, err
 	}
 	temps = append(temps, sortedTemp)
+
+	sp.logger.Tracef("multibufferSplitIntoRuns(): done: len(runs)=%v", len(temps))
 
 	return temps, nil
 }
@@ -168,6 +189,14 @@ func (sp *MultibufferSortPlan) sortIntoTemp(valsList []map[string]*query.Constan
 }
 
 func (sp *MultibufferSortPlan) sortInMemory(valsList []map[string]*query.Constant) {
+	sp.logger.Tracef("sortInMemory(): before")
+	for _, vals := range valsList {
+		v := make(map[string]string, len(vals))
+		for fieldName, val := range vals {
+			v[fieldName] = val.String()
+		}
+		sp.logger.Tracef("%+v", v)
+	}
 	slices.SortStableFunc(valsList, func(a, b map[string]*query.Constant) int {
 		cmp, err := sp.comp.CompareMap(a, b)
 		if err != nil {
@@ -175,6 +204,14 @@ func (sp *MultibufferSortPlan) sortInMemory(valsList []map[string]*query.Constan
 		}
 		return cmp
 	})
+	sp.logger.Tracef("sortInMemory(): after")
+	for _, vals := range valsList {
+		v := make(map[string]string, len(vals))
+		for fieldName, val := range vals {
+			v[fieldName] = val.String()
+		}
+		sp.logger.Tracef("%+v", v)
+	}
 }
 
 // func (sBetterp *SortPlan) multibufferSplitIntoRuns(src query.Scan) ([]*query.TempTable, error) {
@@ -189,8 +226,12 @@ func (sp *MultibufferSortPlan) doAMergeIteration(runs []*query.TempTable) ([]*qu
 
 	result := make([]*query.TempTable, 0)
 	for len(runs) > 1 {
+		if numBuffs > int32(len(runs)) {
+			numBuffs = int32(len(runs))
+		}
 		runsToMerge := runs[:numBuffs]
 		runs = runs[numBuffs:]
+		sp.logger.Tracef("doAMergeIteration(): mergeSeveralRuns: len(runsToMerge)=%d", len(runsToMerge))
 		merged, err := sp.mergeSeveralRuns(runsToMerge)
 		if err != nil {
 			return nil, fmt.Errorf("sp.mergeTwoRuns: %w", err)
@@ -222,25 +263,36 @@ func (sp *MultibufferSortPlan) mergeSeveralRuns(runs []*query.TempTable) (*query
 	}
 	defer dest.Close()
 
-	for {
-		hasMores := make([]query.Scan, 0, len(srcs))
-		for i := range srcs {
-			hasMore, err := srcs[i].Next()
-			if err != nil {
-				return nil, fmt.Errorf("srcs[%d].Next(): %w", i, err)
-			}
+	hasMores := make(map[query.Scan]struct{})
 
-			if hasMore {
-				hasMores = append(hasMores, srcs[i])
-			}
+	for i := range srcs {
+		hasMore, err := srcs[i].Next()
+		if err != nil {
+			return nil, fmt.Errorf("srcs[%d].Next(): %w", i, err)
 		}
 
+		if hasMore {
+			sp.logger.Tracef("mergeSeveralRuns(): srcs[%d]: hasMore=true", i)
+			eid, err := srcs[i].GetInt("eid")
+			if err != nil {
+				return nil, fmt.Errorf("srcs[%d].GetInt(eid): %w", i, err)
+			}
+			sp.logger.Tracef("mergeSeveralRuns(): srcs[%d]: eid=%d", i, eid)
+			hasMores[srcs[i]] = struct{}{}
+		}
+	}
+
+	for {
 		if len(hasMores) == 0 {
 			break
 		}
 
 		errs := make([]error, 0)
-		slices.SortStableFunc(hasMores, func(a, b query.Scan) int {
+		srcs := make([]query.Scan, 0, len(hasMores))
+		for src := range hasMores {
+			srcs = append(srcs, src)
+		}
+		slices.SortStableFunc(srcs, func(a, b query.Scan) int {
 			cmp, err := sp.comp.Compare(a, b)
 			if err != nil {
 				errs = append(errs, err)
@@ -252,35 +304,45 @@ func (sp *MultibufferSortPlan) mergeSeveralRuns(runs []*query.TempTable) (*query
 			return nil, fmt.Errorf("sp.comp.Compare: %w", errors.Join(errs...))
 		}
 
-		for _, src := range hasMores {
-			err = sp.copy(src, dest)
-			if err != nil {
-				return nil, fmt.Errorf("sp.copy: %w", err)
-			}
+		// for _, src := range hasMores {
+		hasMore, err := sp.copy(srcs[0], dest)
+		if err != nil {
+			return nil, fmt.Errorf("sp.copy: %w", err)
 		}
+
+		if !hasMore {
+			delete(hasMores, srcs[0])
+		}
+		// }
 	}
 
 	return result, nil
 }
 
-func (sp *MultibufferSortPlan) copy(src query.Scan, dest query.UpdateScan) error {
+func (sp *MultibufferSortPlan) copy(src query.Scan, dest query.UpdateScan) (bool, error) {
 	err := dest.Insert()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	for _, fieldName := range sp.schema.Fields() {
 		val, err := src.GetVal(fieldName)
 		if err != nil {
-			return fmt.Errorf("src.GetVal(%s): %w", fieldName, err)
+			return false, fmt.Errorf("src.GetVal(%s): %w", fieldName, err)
 		}
+		sp.logger.Tracef("copy(): fieldName=%s, val=%v", fieldName, val)
 		err = dest.SetVal(fieldName, val)
 		if err != nil {
-			return fmt.Errorf("dest.SetVal(%s, %v): %w", fieldName, val, err)
+			return false, fmt.Errorf("dest.SetVal(%s, %v): %w", fieldName, val, err)
 		}
 	}
 
-	return nil
+	next, err := src.Next()
+	if err != nil {
+		return false, err
+	}
+
+	return next, nil
 }
 
 func (sp *MultibufferSortPlan) copyDummyAndReturnVals(src query.Scan, dest query.UpdateScan) (bool, map[string]*query.Constant, error) {
@@ -310,18 +372,19 @@ func (sp *MultibufferSortPlan) copyDummyAndReturnVals(src query.Scan, dest query
 }
 
 func (sp *MultibufferSortPlan) copyAllVals(valsList []map[string]*query.Constant, dest query.UpdateScan) error {
-	err := dest.Insert()
-	if err != nil {
-		return err
-	}
+	for i, vals := range valsList {
+		err := dest.Insert()
+		if err != nil {
+			return err
+		}
 
-	for _, vals := range valsList {
 		for _, fieldName := range sp.schema.Fields() {
 			val, ok := vals[fieldName]
 			if !ok {
 				return fmt.Errorf("vals has no key %s", fieldName)
 			}
 
+			sp.logger.Tracef("copyAllVals(): i=%d, fieldName=%s, val=%v", i, fieldName, val)
 			err = dest.SetVal(fieldName, val)
 			if err != nil {
 				return fmt.Errorf("dest.SetVal(%s, %v): %w", fieldName, val, err)

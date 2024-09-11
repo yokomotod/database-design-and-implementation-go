@@ -82,12 +82,12 @@ func (rp *RecordPage) Format() error {
 }
 
 func (rp *RecordPage) NextAfter(slot int32) (int32, error) {
-	return rp.searchAfter(slot, Used)
+	return rp.SearchAfter(slot, Used)
 }
 
 // InsertAfter 指定されたスロットの後に新しいレコードを挿入する(inuseフラグを立てる)
 func (rp *RecordPage) InsertAfter(slot int32) (int32, error) {
-	newSlot, err := rp.searchAfter(slot, Empty)
+	newSlot, err := rp.SearchAfter(slot, Empty)
 	if err != nil {
 		return 0, err
 	}
@@ -107,7 +107,7 @@ func (rp *RecordPage) setFlag(slot int32, flag InUseFlag) error {
 	return rp.tx.SetInt(rp.blk, rp.offset(slot), int32(flag), true)
 }
 
-func (rp *RecordPage) searchAfter(slot int32, flag InUseFlag) (int32, error) {
+func (rp *RecordPage) SearchAfter(slot int32, flag InUseFlag) (int32, error) {
 	slot++
 	for rp.isValidSlot(slot) {
 		slotFlag, err := rp.tx.GetInt(rp.blk, rp.offset(slot))
