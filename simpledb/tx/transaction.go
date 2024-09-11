@@ -209,7 +209,7 @@ func (b *BufferList) unpin(blk file.BlockID) {
 	b.bm.Unpin(buf)
 	for i, p := range b.pins {
 		if p == blk {
-			b.pins = slices.Delete(b.pins, i, i)
+			b.pins = slices.Delete(b.pins, i, i+1)
 			break
 		}
 	}

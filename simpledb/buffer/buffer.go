@@ -14,13 +14,16 @@ type Buffer struct {
 	pins        int32
 	txNum       int32
 	lsn         int32
+
+	debugName string
 }
 
-func NewBuffer(fm *file.Manager) *Buffer {
+func NewBuffer(fm *file.Manager, debugName string) *Buffer {
 	return &Buffer{
 		fileManager: fm,
 		txNum:       -1,
 		contents:    file.NewPage(fm.BlockSize()),
+		debugName:   debugName,
 	}
 }
 
@@ -44,6 +47,10 @@ func (b *Buffer) Pin() {
 }
 
 func (b *Buffer) Unpin() {
+	if b.pins <= 0 {
+		panic(fmt.Sprintf("unpin() called on unpinned buffer[%s]=%dpins block %+v", b.debugName, b.pins, b.block))
+	}
+
 	b.pins--
 }
 
@@ -84,7 +91,7 @@ type Manager struct {
 func NewManager(fm *file.Manager, buffSize int32) *Manager {
 	bufferPool := make([]*Buffer, buffSize)
 	for i := range bufferPool {
-		bufferPool[i] = NewBuffer(fm)
+		bufferPool[i] = NewBuffer(fm, fmt.Sprintf("%d/%d", i, buffSize))
 	}
 
 	return &Manager{
