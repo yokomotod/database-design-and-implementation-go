@@ -23,7 +23,7 @@ func TestBuffer(t *testing.T) {
 
 		bm := db.BufferManager()
 
-		buff1, err := bm.Pin(file.NewBlockID("testfile", 1))
+		buff1, _, err := bm.Pin(file.NewBlockID("testfile", 1))
 		if err != nil {
 			t.Fatalf("bm.Pin(1): %v", err)
 		}
@@ -41,22 +41,22 @@ func TestBuffer(t *testing.T) {
 		bm.Unpin(buff1)
 
 		// One of these pins will flush buff1 to disk:
-		buff2, err := bm.Pin(file.NewBlockID("testfile", 2))
+		buff2, _, err := bm.Pin(file.NewBlockID("testfile", 2))
 		if err != nil {
 			t.Fatalf("bm.Pin(2): %v", err)
 		}
-		/* buff3 */ _, err = bm.Pin(file.NewBlockID("testfile", 3))
+		/* buff3 */ _, _, err = bm.Pin(file.NewBlockID("testfile", 3))
 		if err != nil {
 			t.Fatalf("bm.Pin(3): %v", err)
 		}
-		/* buff4 */ _, err = bm.Pin(file.NewBlockID("testfile", 4))
+		/* buff4 */ _, _, err = bm.Pin(file.NewBlockID("testfile", 4))
 		if err != nil {
 			t.Fatalf("bm.Pin(4): %v", err)
 		}
 
 		bm.Unpin(buff2)
 
-		buff1, err = bm.Pin(file.NewBlockID("testfile", 1))
+		buff1, _, err = bm.Pin(file.NewBlockID("testfile", 1))
 		if err != nil {
 			t.Fatalf("bm.Pin(1): %v", err)
 		}
@@ -77,15 +77,15 @@ func TestBufferManager(t *testing.T) {
 	bm := db.BufferManager()
 
 	buff := [6]*buffer.Buffer{}
-	buff[0], err = bm.Pin(file.NewBlockID("testfile", 0))
+	buff[0], _, err = bm.Pin(file.NewBlockID("testfile", 0))
 	if err != nil {
 		t.Fatalf("bm.Pin: %v", err)
 	}
-	buff[1], err = bm.Pin(file.NewBlockID("testfile", 1))
+	buff[1], _, err = bm.Pin(file.NewBlockID("testfile", 1))
 	if err != nil {
 		t.Fatalf("bm.Pin: %v", err)
 	}
-	buff[2], err = bm.Pin(file.NewBlockID("testfile", 2))
+	buff[2], _, err = bm.Pin(file.NewBlockID("testfile", 2))
 	if err != nil {
 		t.Fatalf("bm.Pin: %v", err)
 	}
@@ -93,12 +93,12 @@ func TestBufferManager(t *testing.T) {
 	bm.Unpin(buff[1])
 	buff[1] = nil
 
-	buff[3], err = bm.Pin(file.NewBlockID("testfile", 0)) // block 0 pinned twice
+	buff[3], _, err = bm.Pin(file.NewBlockID("testfile", 0)) // block 0 pinned twice
 	if err != nil {
 		t.Fatalf("bm.Pin: %v", err)
 	}
 
-	buff[4], err = bm.Pin(file.NewBlockID("testfile", 1)) // block 1 repinned
+	buff[4], _, err = bm.Pin(file.NewBlockID("testfile", 1)) // block 1 repinned
 	if err != nil {
 		t.Fatalf("bm.Pin: %v", err)
 	}
@@ -106,7 +106,7 @@ func TestBufferManager(t *testing.T) {
 	fmt.Printf("Available buffers: %d\n", bm.NumAvailable())
 
 	fmt.Println("Attempting to pin block 3...")
-	buff[5], err = bm.Pin(file.NewBlockID("testfile", 3)) // will not work; no buffers left
+	buff[5], _, err = bm.Pin(file.NewBlockID("testfile", 3)) // will not work; no buffers left
 	if err != nil {
 		if err != buffer.ErrBufferAbort {
 			t.Fatalf("bm.Pin: %v", err)
@@ -119,7 +119,7 @@ func TestBufferManager(t *testing.T) {
 	bm.Unpin(buff[2])
 	buff[2] = nil
 
-	buff[5], err = bm.Pin(file.NewBlockID("testfile", 3)) // now this works
+	buff[5], _, err = bm.Pin(file.NewBlockID("testfile", 3)) // now this works
 	if err != nil {
 		t.Fatalf("bm.Pin: %v", err)
 	}

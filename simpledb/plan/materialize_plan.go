@@ -6,23 +6,30 @@ import (
 	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
+	"simpledb/util/logger"
 )
 
 var _ Plan = (*MaterializePlan)(nil)
 
 type MaterializePlan struct {
+	logger *logger.Logger
+
 	srcPlan Plan
 	tx      *tx.Transaction
 }
 
 func NewMaterializePlan(tx *tx.Transaction, srcPlan Plan) *MaterializePlan {
 	return &MaterializePlan{
+		logger: logger.New("plan.MaterializePlan", logger.Trace),
+
 		srcPlan: srcPlan,
 		tx:      tx,
 	}
 }
 
 func (p *MaterializePlan) Open() (query.Scan, error) {
+	p.logger.Tracef("Open()")
+
 	sch := p.srcPlan.Schema()
 	temp := query.NewTempTable(p.tx, sch)
 	src, err := p.srcPlan.Open()
@@ -37,6 +44,7 @@ func (p *MaterializePlan) Open() (query.Scan, error) {
 	}
 
 	for {
+		p.logger.Tracef("MaterializePlan.Open(): src.Next()")
 		next, err := src.Next()
 		if err != nil {
 			return nil, fmt.Errorf("src.Next(): %w", err)
@@ -65,6 +73,7 @@ func (p *MaterializePlan) Open() (query.Scan, error) {
 		return nil, fmt.Errorf("dest.BeforeFirst(): %w", err)
 	}
 
+	p.logger.Tracef("Open(): done")
 	return dest, nil
 }
 
@@ -72,7 +81,11 @@ func (p *MaterializePlan) BlocksAccessed() int32 {
 	// create a dummy Layout object to calculate slot size
 	layout := record.NewLayoutFromSchema(p.srcPlan.Schema())
 	rpb := float64(p.tx.BlockSize()) / float64(layout.SlotSize())
-	return int32(math.Ceil(float64(p.srcPlan.RecordsOutput()) / rpb))
+	blockAccessed := int32(math.Ceil(float64(p.srcPlan.RecordsOutput()) / rpb))
+
+	p.logger.Tracef("BlocksAccessed(): rpb = blockSize(%d) / slotSize(%d) = %f", p.tx.BlockSize(), layout.SlotSize(), rpb)
+	p.logger.Tracef("BlocksAccessed() = ceil(recordsOutput(%d) / rpb(%f)) = %d", p.srcPlan.RecordsOutput(), rpb, blockAccessed)
+	return blockAccessed
 }
 
 func (p *MaterializePlan) RecordsOutput() int32 {

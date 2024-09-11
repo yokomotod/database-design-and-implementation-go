@@ -65,32 +65,35 @@ func (b *Buffer) IsPinned() bool {
 	return b.pins > 0
 }
 
-func (b *Buffer) AssignToBlock(blk file.BlockID) error {
+func (b *Buffer) AssignToBlock(blk file.BlockID) (bool, error) {
 	b.logger.Tracef("AssignToBlock(): buffer[%s] old=%+v new=%+v", b.debugName, b.block, blk)
-	b.flush()
+	flushed, err := b.flush()
+	if err != nil {
+		return false, fmt.Errorf("b.flush: %w", err)
+	}
 	b.block = blk
 
 	b.logger.Tracef("AssignToBlock(): read block %+v to buffer[%s]", blk, b.debugName)
 	if err := b.fileManager.Read(blk, b.contents); err != nil {
-		return fmt.Errorf("fileManager.Read: %w", err)
+		return false, fmt.Errorf("fileManager.Read: %w", err)
 	}
 	b.pins = 0
 
-	return nil
+	return flushed, nil
 }
 
-func (b *Buffer) flush() error {
+func (b *Buffer) flush() (bool, error) {
 	if b.txNum <= 0 {
-		return nil
+		return false, nil
 	}
 
 	b.logger.Tracef("flush(): write buffer[%s] to block %+v", b.debugName, b.block)
 	if err := b.fileManager.Write(b.block, b.contents); err != nil {
-		return fmt.Errorf("fileManager.Write: %w", err)
+		return false, fmt.Errorf("fileManager.Write: %w", err)
 	}
 	b.txNum = -1
 
-	return nil
+	return true, nil
 }
 
 type Manager struct {
@@ -151,31 +154,38 @@ func (bm *Manager) Unpin(buff *Buffer) {
 
 var ErrBufferAbort = errors.New("buffer abort")
 
-func (bm *Manager) Pin(blk file.BlockID) (*Buffer, error) {
+func (bm *Manager) Pin(blk file.BlockID) (*Buffer, int, error) {
 	bm.mux.Lock()
 	defer bm.mux.Unlock()
 
-	buff, err := bm.tryToPin(blk)
+	buff, blockAccessed, err := bm.tryToPin(blk)
 	if err != nil {
-		return nil, fmt.Errorf("bm.tryToPin: %w", err)
+		return nil, 0, fmt.Errorf("bm.tryToPin: %w", err)
 	}
 	if buff == nil {
-		return nil, ErrBufferAbort
+		return nil, 0, ErrBufferAbort
 	}
 
-	return buff, nil
+	return buff, blockAccessed, nil
 }
 
-func (bm *Manager) tryToPin(blk file.BlockID) (*Buffer, error) {
+func (bm *Manager) tryToPin(blk file.BlockID) (*Buffer, int, error) {
 	buff := bm.findExistingBuffer(blk)
+	blockAccessed := 0
 
 	if buff == nil {
 		buff = bm.chooseUnpinnedBuffer()
 		if buff == nil {
-			return nil, nil
+			return nil, 0, nil
 		}
-		if err := buff.AssignToBlock(blk); err != nil {
-			return nil, fmt.Errorf("buff.AssignToBlock: %w", err)
+		flushed, err := buff.AssignToBlock(blk)
+		if err != nil {
+			return nil, 0, fmt.Errorf("buff.AssignToBlock: %w", err)
+		}
+		if flushed {
+			blockAccessed = 2
+		} else {
+			blockAccessed = 1
 		}
 	}
 	if !buff.IsPinned() {
@@ -183,7 +193,7 @@ func (bm *Manager) tryToPin(blk file.BlockID) (*Buffer, error) {
 		bm.logger.Tracef("tryToPin(): numAvailable=%d/%d", bm.numAvailable, len(bm.bufferPool))
 	}
 	buff.Pin()
-	return buff, nil
+	return buff, blockAccessed, nil
 }
 
 func (bm *Manager) findExistingBuffer(blk file.BlockID) *Buffer {

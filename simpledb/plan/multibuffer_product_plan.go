@@ -5,9 +5,12 @@ import (
 	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
+	"simpledb/util/logger"
 )
 
 type MultibufferProductPlan struct {
+	logger *logger.Logger
+
 	tx       *tx.Transaction
 	lhs, rhs Plan
 	schema   *record.Schema
@@ -19,6 +22,8 @@ func NewMultibufferProductPlan(tx *tx.Transaction, lhs Plan, rhs Plan) *Multibuf
 	schema.AddAll(rhs.Schema())
 
 	return &MultibufferProductPlan{
+		logger: logger.New("plan.MultibufferProductPlan", logger.Trace),
+
 		tx:     tx,
 		lhs:    NewMaterializePlan(tx, lhs),
 		rhs:    rhs,
@@ -54,8 +59,13 @@ func (p *MultibufferProductPlan) Open() (query.Scan, error) {
 func (p *MultibufferProductPlan) BlocksAccessed() int32 {
 	avail := p.tx.AvailableBuffers()
 	size := NewMaterializePlan(p.tx, p.rhs).BlocksAccessed()
-	numchunks := size / avail
-	return p.rhs.BlocksAccessed() + (p.lhs.BlocksAccessed() * numchunks)
+	numchunks := size / avail // need `+ 1` ?
+
+	blockAccessed := p.rhs.BlocksAccessed() + (p.lhs.BlocksAccessed() * numchunks)
+
+	p.logger.Tracef("BlocksAccessed(): numchunks = size(%d) / avail(%d) = %d", size, avail, numchunks)
+	p.logger.Tracef("BlocksAccessed() = rhs(%d) + (lhs(%d) * numchunks(%d)) = %d", p.rhs.BlocksAccessed(), p.lhs.BlocksAccessed(), numchunks, blockAccessed)
+	return blockAccessed
 }
 
 func (p *MultibufferProductPlan) RecordsOutput() int32 {

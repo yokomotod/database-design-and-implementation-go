@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"simpledb/record"
 	"simpledb/tx"
+	"simpledb/util/logger"
 )
 
 var _ Scan = (*MultibufferProductScan)(nil)
 
 type MultibufferProductScan struct {
+	logger *logger.Logger
+
 	tx         *tx.Transaction
 	lhs        Scan
 	rhs        *ChunkScan   // 元実装では `Scan`
@@ -21,6 +24,8 @@ type MultibufferProductScan struct {
 }
 
 func NewMultibufferProductScan(tx *tx.Transaction, lhs Scan, tableName string, layout *record.Layout) (*MultibufferProductScan, error) {
+	logger := logger.New("query.MultibufferProductScan", logger.Trace)
+
 	fileName := tableName + ".tbl"
 
 	fileSize, err := tx.Size(fileName)
@@ -30,12 +35,16 @@ func NewMultibufferProductScan(tx *tx.Transaction, lhs Scan, tableName string, l
 
 	available := tx.AvailableBuffers()
 	chunkSize := BufferNeedsBestFactor(available, fileSize)
+	logger.Tracef("NewMultibufferProductScan(): chunkSize=BufferNeedsBestFactor(available=%d, fileSize=%d)=%d", available, fileSize, chunkSize)
 
 	return &MultibufferProductScan{
+		logger: logger,
+
 		tx:        tx,
 		lhs:       lhs,
 		filename:  fileName,
 		layout:    layout,
+		fileSize:  fileSize,
 		chunkSize: chunkSize,
 	}, nil
 }
@@ -102,6 +111,7 @@ func (s *MultibufferProductScan) HasField(fldname string) bool {
 
 func (s *MultibufferProductScan) useNextChunk() (bool, error) {
 	if s.nextBlkNum >= s.fileSize {
+		s.logger.Tracef("useNextChunk(): nextBlkNum=%d >= fileSize=%d, no more chunks", s.nextBlkNum, s.fileSize)
 		return false, nil
 	}
 

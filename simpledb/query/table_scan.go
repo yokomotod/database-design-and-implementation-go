@@ -24,7 +24,7 @@ type TableScan struct {
 }
 
 func NewTableScan(tx *tx.Transaction, tableName string, layout *record.Layout) (*TableScan, error) {
-	logger := logger.New("query.TableScan", logger.Debug)
+	logger := logger.New("query.TableScan", logger.Trace)
 
 	tableScan := &TableScan{logger, tx, layout, nil, tableName + ".tbl", -1}
 
@@ -59,6 +59,7 @@ func (ts *TableScan) BeforeFirst() error {
 func (ts *TableScan) Next() (bool, error) {
 	var err error
 	for {
+		ts.logger.Tracef("Next(): rp.NextAfter(%d)", ts.currentSlot)
 		ts.currentSlot, err = ts.rp.NextAfter(ts.currentSlot)
 		if err != nil {
 			return false, err

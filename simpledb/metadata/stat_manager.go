@@ -145,5 +145,6 @@ func (sm *StatManager) calcTableStats(tableName string, layout *record.Layout, t
 		}
 		numBlocks = rid.BlockNumber() + 1
 	}
+	sm.logger.Debugf("calcTableStats(%q): numRecs=%d, numBlocks=%d", tableName, numRecs, numBlocks)
 	return NewStatInfo(numBlocks, numRecs), nil
 }
