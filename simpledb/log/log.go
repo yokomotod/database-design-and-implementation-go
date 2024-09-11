@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"simpledb/file"
+	"simpledb/util/logger"
 )
 
 type LogIterator struct {
@@ -63,6 +64,8 @@ func (it *LogIterator) Next() ([]byte, error) {
 }
 
 type Manager struct {
+	logger *logger.Logger
+
 	fileManager *file.Manager
 	logFile     string
 	logPage     *file.Page
@@ -74,6 +77,9 @@ type Manager struct {
 }
 
 func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
+	logger := logger.New("log.Manager", logger.Trace)
+	logger.Tracef("NewManager(%s)", logFile)
+
 	b := make([]byte, fileManager.BlockSize())
 	logPage := file.NewPageWith(b)
 
@@ -83,6 +89,8 @@ func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
 	}
 
 	lm := &Manager{
+		logger: logger,
+
 		fileManager: fileManager,
 		logFile:     logFile,
 		logPage:     logPage,

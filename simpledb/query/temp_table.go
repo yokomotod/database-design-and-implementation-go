@@ -34,6 +34,10 @@ func (tt *TempTable) Open() (*TableScan, error) {
 	return scan, nil
 }
 
+func (tt *TempTable) Schema() *record.Schema {
+	return tt.Layout.Schema()
+}
+
 func newTableName() string {
 	mux.Lock()
 	defer mux.Unlock()

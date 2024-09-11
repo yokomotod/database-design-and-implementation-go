@@ -4,10 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"simpledb/file"
+	"simpledb/util/logger"
 	"sync"
 )
 
 type Buffer struct {
+	logger *logger.Logger
+
 	fileManager *file.Manager
 	contents    *file.Page
 	block       file.BlockID
@@ -20,6 +23,8 @@ type Buffer struct {
 
 func NewBuffer(fm *file.Manager, debugName string) *Buffer {
 	return &Buffer{
+		logger: logger.New("buffer.Buffer", logger.Trace),
+
 		fileManager: fm,
 		txNum:       -1,
 		contents:    file.NewPage(fm.BlockSize()),
@@ -44,6 +49,7 @@ func (b *Buffer) SetModified(txNum int32, lsn int32) {
 
 func (b *Buffer) Pin() {
 	b.pins++
+	b.logger.Tracef("Pin(): buffer[%s]=%dpins block %+v", b.debugName, b.pins, b.block)
 }
 
 func (b *Buffer) Unpin() {
@@ -52,6 +58,7 @@ func (b *Buffer) Unpin() {
 	}
 
 	b.pins--
+	b.logger.Tracef("Unpin(): buffer[%s]=%dpins block %+v", b.debugName, b.pins, b.block)
 }
 
 func (b *Buffer) IsPinned() bool {
@@ -61,6 +68,8 @@ func (b *Buffer) IsPinned() bool {
 func (b *Buffer) AssignToBlock(blk file.BlockID) error {
 	b.flush()
 	b.block = blk
+
+	b.logger.Tracef("AssignToBlock(): read block %+v to buffer[%s]", blk, b.debugName)
 	if err := b.fileManager.Read(blk, b.contents); err != nil {
 		return fmt.Errorf("fileManager.Read: %w", err)
 	}
@@ -74,6 +83,7 @@ func (b *Buffer) flush() error {
 		return nil
 	}
 
+	b.logger.Tracef("flush(): write buffer[%s] to block %+v", b.debugName, b.block)
 	if err := b.fileManager.Write(b.block, b.contents); err != nil {
 		return fmt.Errorf("fileManager.Write: %w", err)
 	}

@@ -2,6 +2,8 @@ package query
 
 import (
 	"fmt"
+	"hash/fnv"
+	"strconv"
 	"strings"
 )
 
@@ -61,6 +63,19 @@ func (c *Constant) CompareTo(other *Constant) (int, error) {
 		return strings.Compare(*c.sval, *other.sval), nil
 	}
 	return 0, ErrInvalidConstantType
+}
+
+func (c *Constant) HashCode() int32 {
+	h := fnv.New32()
+	if c.ival != nil {
+		h.Write([]byte(strconv.Itoa(int(*c.ival))))
+		return int32(h.Sum32())
+	}
+	if c.sval != nil {
+		h.Write([]byte(*c.sval))
+		return int32(h.Sum32())
+	}
+	return 0
 }
 
 func (c *Constant) String() string {

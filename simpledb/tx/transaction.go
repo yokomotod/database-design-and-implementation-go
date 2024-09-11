@@ -10,6 +10,7 @@ import (
 	"simpledb/log"
 	"simpledb/tx/concurrency"
 	"simpledb/tx/recovery"
+	"simpledb/util/logger"
 )
 
 const endOfFile = -1
@@ -20,6 +21,8 @@ var (
 )
 
 type Transaction struct {
+	logger *logger.Logger
+
 	recoveryMgr *recovery.Manager
 	concurMgr   *concurrency.Manager
 	bm          *buffer.Manager
@@ -30,6 +33,8 @@ type Transaction struct {
 
 func New(fileMgr *file.Manager, logMgr *log.Manager, bufferManager *buffer.Manager) (*Transaction, error) {
 	tx := &Transaction{
+		logger: logger.New("tx.Transaction", logger.Trace),
+
 		concurMgr: concurrency.New(),
 		fm:        fileMgr,
 		bm:        bufferManager,
@@ -46,23 +51,25 @@ func New(fileMgr *file.Manager, logMgr *log.Manager, bufferManager *buffer.Manag
 }
 
 func (tx *Transaction) Commit() error {
+	tx.logger.Tracef("transaction %d committing\n", tx.txnum)
 	if err := tx.recoveryMgr.Commit(); err != nil {
 		return err
 	}
 	tx.concurMgr.Release()
 	tx.mybuffers.unpinAll()
-	fmt.Printf("transaction %d committed\n", tx.txnum)
+	tx.logger.Debugf("transaction %d committed\n", tx.txnum)
 
 	return nil
 }
 
 func (tx *Transaction) Rollback() error {
+	tx.logger.Tracef("transaction %d rolling back", tx.txnum)
 	if err := tx.recoveryMgr.Rollback(); err != nil {
 		return err
 	}
 	tx.concurMgr.Release()
 	tx.mybuffers.unpinAll()
-	fmt.Printf("transaction %d rolled back\n", tx.txnum)
+	tx.logger.Debugf("transaction %d rolled back", tx.txnum)
 
 	return nil
 }
@@ -77,10 +84,12 @@ func (tx *Transaction) Recover() error {
 }
 
 func (tx *Transaction) Pin(blk file.BlockID) error {
+	tx.logger.Tracef("Pin(%v)", blk)
 	return tx.mybuffers.pin(blk)
 }
 
 func (tx *Transaction) Unpin(blk file.BlockID) {
+	tx.logger.Tracef("Unpin(%v)", blk)
 	tx.mybuffers.unpin(blk)
 }
 
@@ -157,7 +166,15 @@ func (tx *Transaction) Append(filename string) (file.BlockID, error) {
 	if err := tx.concurMgr.XLock(dummyblk); err != nil {
 		return file.BlockID{}, err
 	}
-	return tx.fm.Append(filename)
+
+	blk, err := tx.fm.Append(filename)
+	if err != nil {
+		return file.BlockID{}, err
+	}
+
+	tx.logger.Tracef("write block from append %+v", blk)
+
+	return blk, nil
 }
 
 func (tx *Transaction) BlockSize() int32 {
@@ -173,7 +190,6 @@ func nextTxNumber() int32 {
 	defer txMutex.Unlock()
 
 	nextTxNum++
-	fmt.Printf("new transaction: %d\n", nextTxNum)
 	return nextTxNum
 }
 
