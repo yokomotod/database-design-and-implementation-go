@@ -1,6 +1,9 @@
 package query
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 var ErrInvalidConstantType = fmt.Errorf("invalid constant type")
 
@@ -43,6 +46,21 @@ func (c *Constant) Equals(other *Constant) bool {
 		}
 		return *c.sval == *other.sval
 	}
+}
+
+func (c *Constant) CompareTo(other *Constant) (int, error) {
+	if c.ival != nil && other.ival != nil {
+		if *c.ival > *other.ival {
+			return 1, nil
+		} else if *c.ival < *other.ival {
+			return -1, nil
+		}
+		return 0, nil
+	}
+	if c.sval != nil && other.sval != nil {
+		return strings.Compare(*c.sval, *other.sval), nil
+	}
+	return 0, ErrInvalidConstantType
 }
 
 func (c *Constant) String() string {

@@ -2,6 +2,7 @@ package record
 
 import "fmt"
 
+// データの位置を示す構造体。一意データを特定できる。
 type RID struct {
 	blockNum int32
 	slot     int32
