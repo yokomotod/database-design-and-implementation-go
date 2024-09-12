@@ -17,7 +17,7 @@ func TestMaterializePlanBlocksAccessed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	err = testlib.InsertLargeTestData(t, simpleDB)
+	err = testlib.InsertMiddleTestData(t, simpleDB)
 	if err != nil {
 		t.Fatalf("failed to setup test data: %v", err)
 	}

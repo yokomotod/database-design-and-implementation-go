@@ -60,9 +60,17 @@ func (s *Schema) HasField(fieldName string) bool {
 }
 
 func (s *Schema) Type(fieldName string) FieldType {
-	return s.info[fieldName].FieldType
+	f, ok := s.info[fieldName]
+	if !ok {
+		panic("field not found: " + fieldName)
+	}
+	return f.FieldType
 }
 
 func (s *Schema) Length(fieldName string) int32 {
-	return s.info[fieldName].Length
+	f, ok := s.info[fieldName]
+	if !ok {
+		panic("field not found: " + fieldName)
+	}
+	return f.Length
 }

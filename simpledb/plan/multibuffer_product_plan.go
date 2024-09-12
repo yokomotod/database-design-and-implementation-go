@@ -8,6 +8,8 @@ import (
 	"simpledb/util/logger"
 )
 
+var _ Plan = (*MultibufferProductPlan)(nil)
+
 type MultibufferProductPlan struct {
 	logger *logger.Logger
 

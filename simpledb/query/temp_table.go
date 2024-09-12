@@ -11,9 +11,10 @@ var nextTableNum = 0
 var mux = &sync.Mutex{}
 
 type TempTable struct {
-	tx        *tx.Transaction
-	TableName string
-	Layout    *record.Layout
+	tx          *tx.Transaction
+	TableName   string
+	Layout      *record.Layout
+	TotalBlkNum int32 // ちゃんと更新する HashJoinPlan.copyToTemp でしか更新していない
 }
 
 func NewTempTable(tx *tx.Transaction, sch *record.Schema) *TempTable {

@@ -21,12 +21,13 @@ type TableScan struct {
 	rp          *record.RecordPage
 	filename    string
 	currentSlot int32
+	TotalBlkNum int32
 }
 
 func NewTableScan(tx *tx.Transaction, tableName string, layout *record.Layout) (*TableScan, error) {
 	logger := logger.New("query.TableScan", logger.Trace)
 
-	tableScan := &TableScan{logger, tx, layout, nil, tableName + ".tbl", -1}
+	tableScan := &TableScan{logger, tx, layout, nil, tableName + ".tbl", -1, 0}
 
 	logger.Debugf("NewTableScan(): tx.Size(%q)", tableScan.filename)
 	size, err := tx.Size(tableScan.filename)
@@ -241,6 +242,7 @@ func (ts *TableScan) moveToNewBlock() error {
 		return err
 	}
 	ts.currentSlot = -1
+	ts.TotalBlkNum++
 	return nil
 }
 

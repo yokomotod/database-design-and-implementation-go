@@ -48,7 +48,7 @@ func (sp *MultibufferSortPlan) Open() (query.Scan, error) {
 		}
 	}
 
-	sc, err := query.NewSortScan(runs, sp.comp)
+	sc, err := query.NewSortScan(runs, sp.comp) // SortScanである必要ない？
 	if err != nil {
 		return nil, fmt.Errorf("query.NewSortScan: %w", err)
 	}
