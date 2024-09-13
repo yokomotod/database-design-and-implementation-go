@@ -88,9 +88,9 @@ func (sp *SortPlan) splitIntoRuns(src query.Scan) ([]*query.TempTable, error) {
 		return nil, err
 	}
 
-	// src < currentScan になるまでコピーし続けることで、
-	// 昇順にソートされたtemp table（ラン）が作成される。
-	// 順序が崩れたら新しいtemp tableにコピーしていく。
+	// src < currentScan になるまでコピーし続けることで、 昇順にソートされた TempTable（run）が作成される。
+	// 順序が崩れたら新しい TempTable にコピーしていく。
+	// ex. [2, 6, 20, 4, 1, 16, 19, 3, 18] => [2, 6, 10], [4], [1, 16, 19], [3, 18]
 	for {
 		next, err = sp.copy(src, currentScan)
 		if err != nil {
