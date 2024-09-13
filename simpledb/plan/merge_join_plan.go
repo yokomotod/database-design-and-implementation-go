@@ -69,10 +69,14 @@ func (mjp *MergeJoinPlan) RecordsOutput() int {
 }
 
 func (mjp *MergeJoinPlan) DistinctValues(fieldName string) int {
-	if mjp.sch.HasField(fieldName) {
+	if mjp.p1.Schema().HasField(fieldName) {
 		return mjp.p1.DistinctValues(fieldName)
 	}
-	return mjp.p2.DistinctValues(fieldName)
+	if mjp.p2.Schema().HasField(fieldName) {
+		return mjp.p2.DistinctValues(fieldName)
+	}
+	// NOTE: panic の他に良い方法があれば
+	panic("field not found")
 }
 
 func (mjp *MergeJoinPlan) Schema() *record.Schema {
