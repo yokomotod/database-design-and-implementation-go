@@ -16,6 +16,10 @@ type SortScan struct {
 }
 
 func NewSortScan(runs []*TempTable, comp *RecordComparator) (*SortScan, error) {
+	if !(len(runs) == 1 || len(runs) == 2) {
+		return nil, fmt.Errorf("runs must have 1 or 2 elements, but got %d", len(runs))
+	}
+
 	s1, err := runs[0].Open()
 	if err != nil {
 		return nil, fmt.Errorf("runs[0].Open: %w", err)
