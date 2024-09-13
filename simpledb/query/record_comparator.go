@@ -2,7 +2,6 @@ package query
 
 import (
 	"fmt"
-	"strings"
 )
 
 type RecordComparator struct {
@@ -25,7 +24,7 @@ func (rc *RecordComparator) Compare(scan1 Scan, scan2 Scan) (int, error) {
 		}
 
 		if !val1.Equals(val2) {
-			return strings.Compare(val1.String(), val2.String()), nil
+			return val1.CompareTo(val2)
 		}
 	}
 

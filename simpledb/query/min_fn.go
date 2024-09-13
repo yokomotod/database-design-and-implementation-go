@@ -2,7 +2,6 @@ package query
 
 import (
 	"fmt"
-	"strings"
 )
 
 var _ AggregationFn = (*MinFn)(nil)
@@ -30,7 +29,11 @@ func (mf *MinFn) ProcessNext(scan Scan) error {
 	if err != nil {
 		return fmt.Errorf("scan.GetVal(): %v", err)
 	}
-	if strings.Compare(val.String(), mf.val.String()) < 0 {
+	cmp, err := val.CompareTo(mf.val)
+	if err != nil {
+		return fmt.Errorf("val.CompareTo(): %v", err)
+	}
+	if cmp < 0 {
 		mf.val = val
 	}
 	return nil
