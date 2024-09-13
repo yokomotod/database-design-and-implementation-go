@@ -8,13 +8,12 @@ import (
 var _ Scan = (*MergeJoinScan)(nil)
 
 type MergeJoinScan struct {
-	s1                     Scan
-	s2                     *SortScan
+	s1, s2                 *SortScan
 	fieldName1, fieldName2 string
 	joinVal                *Constant
 }
 
-func NewMergeJoinScan(s1 Scan, s2 *SortScan, fieldName1, fieldName2 string) *MergeJoinScan {
+func NewMergeJoinScan(s1, s2 *SortScan, fieldName1, fieldName2 string) *MergeJoinScan {
 	return &MergeJoinScan{
 		s1:         s1,
 		s2:         s2,

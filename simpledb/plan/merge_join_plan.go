@@ -11,7 +11,7 @@ import (
 var _ Plan = (*MergeJoinPlan)(nil)
 
 type MergeJoinPlan struct {
-	p1, p2             Plan
+	p1, p2             *SortPlan
 	fldName1, fldName2 string
 	sch                *record.Schema
 }
@@ -43,15 +43,19 @@ func (mjp *MergeJoinPlan) Open() (query.Scan, error) {
 	if err != nil {
 		return nil, fmt.Errorf("mjp.p1.Open: %w", err)
 	}
+	ss1, ok := s1.(*query.SortScan)
+	if !ok {
+		return nil, errors.New("s1 is not a SortScan")
+	}
 	s2, err := mjp.p2.Open()
 	if err != nil {
 		return nil, fmt.Errorf("mjp.p2.Open: %w", err)
 	}
 	ss2, ok := s2.(*query.SortScan)
 	if !ok {
-		return nil, errors.New("p2 is not a SortScan")
+		return nil, errors.New("s2 is not a SortScan")
 	}
-	return query.NewMergeJoinScan(s1, ss2, mjp.fldName1, mjp.fldName2), nil
+	return query.NewMergeJoinScan(ss1, ss2, mjp.fldName1, mjp.fldName2), nil
 }
 
 func (mjp *MergeJoinPlan) BlocksAccessed() int {

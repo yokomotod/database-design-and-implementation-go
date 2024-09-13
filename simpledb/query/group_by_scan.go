@@ -8,14 +8,14 @@ import (
 var _ Scan = (*GroupByScan)(nil)
 
 type GroupByScan struct {
-	scan          Scan
+	scan          *SortScan
 	groupFields   []string
 	aggFns        []AggregationFn
 	groupValue    *GroupValue
 	hasMoreGroups bool
 }
 
-func NewGroupByScan(scan Scan, groupFields []string, aggFns []AggregationFn) *GroupByScan {
+func NewGroupByScan(scan *SortScan, groupFields []string, aggFns []AggregationFn) *GroupByScan {
 	return &GroupByScan{
 		scan:          scan,
 		groupFields:   groupFields,

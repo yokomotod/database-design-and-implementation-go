@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"errors"
 	"fmt"
 	"simpledb/query"
 	"simpledb/record"
@@ -10,7 +11,7 @@ import (
 var _ Plan = (*GroupByPlan)(nil)
 
 type GroupByPlan struct {
-	plan        Plan
+	plan        *SortPlan
 	groupFields []string
 	aggFns      []query.AggregationFn
 	schema      *record.Schema
@@ -41,7 +42,11 @@ func (gp *GroupByPlan) Open() (query.Scan, error) {
 	if err != nil {
 		return nil, fmt.Errorf("gp.plan.Open: %w", err)
 	}
-	return query.NewGroupByScan(s, gp.groupFields, gp.aggFns), nil
+	ss, ok := s.(*query.SortScan)
+	if !ok {
+		return nil, errors.New("s is not a SortScan")
+	}
+	return query.NewGroupByScan(ss, gp.groupFields, gp.aggFns), nil
 }
 
 func (gp *GroupByPlan) BlocksAccessed() int {
