@@ -5,6 +5,7 @@ import (
 	"simpledb/plan"
 	"simpledb/query"
 	"simpledb/server"
+	"simpledb/testlib"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,7 +16,7 @@ func TestIndexRetrieval(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	err = insertTestData(simpleDB)
+	err = testlib.InsertTestData(t, simpleDB)
 	if err != nil {
 		t.Fatalf("failed to setup test data: %v", err)
 	}
@@ -94,7 +95,7 @@ func TestIndexUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	err = insertTestData(simpleDB)
+	err = testlib.InsertTestData(t, simpleDB)
 	if err != nil {
 		t.Fatalf("failed to setup test data: %v", err)
 	}

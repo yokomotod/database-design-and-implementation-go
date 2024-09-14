@@ -82,7 +82,6 @@ func TestStudent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open scan: %v", err)
 	}
-	defer sc.Close()
 
 	type student struct {
 		sid   int32
@@ -122,5 +121,10 @@ func TestStudent(t *testing.T) {
 		if s != want[i] {
 			t.Errorf("want: %v, got: %v", want[i], got[i])
 		}
+	}
+	sc.Close()
+	err = tx.Commit()
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
 	}
 }

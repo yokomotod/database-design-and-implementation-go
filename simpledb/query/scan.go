@@ -12,6 +12,7 @@ type Scan interface {
 	Close()
 }
 type UpdateScan interface {
+	Scan
 	SetVal(fieldName string, val *Constant) error
 	SetInt(fieldName string, val int32) error
 	SetString(fieldName string, val string) error
