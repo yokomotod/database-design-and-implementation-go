@@ -68,24 +68,24 @@ func TestSortPlan(t *testing.T) {
 		if !next {
 			break
 		}
-		nextGradyear, err := sortScan.GetInt("gradyear")
+		currentGradyear, err := sortScan.GetInt("gradyear")
 		if err != nil {
 			t.Fatalf("failed to get gradyear: %v", err)
 		}
-		nextSname, err := sortScan.GetString("sname")
+		currentSname, err := sortScan.GetString("sname")
 		if err != nil {
 			t.Fatalf("failed to get sname: %v", err)
 		}
 
-		if gradyear > nextGradyear {
-			t.Fatalf("gradyear is not sorted: %d > %d", gradyear, nextGradyear)
+		if gradyear > currentGradyear {
+			t.Fatalf("gradyear is not sorted: %d > %d", gradyear, currentGradyear)
 		}
-		if gradyear == nextGradyear && sname > nextSname {
-			t.Fatalf("sname is not sorted: %s > %s", sname, nextSname)
+		if gradyear == currentGradyear && sname > currentSname {
+			t.Fatalf("sname is not sorted: %s > %s", sname, currentSname)
 		}
 
-		gradyear = nextGradyear
-		sname = nextSname
+		gradyear = currentGradyear
+		sname = currentSname
 	}
 
 	sortScan.Close()

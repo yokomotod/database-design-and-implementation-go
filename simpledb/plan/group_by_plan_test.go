@@ -62,7 +62,14 @@ func TestGroupByPlan(t *testing.T) {
 		30: {2020, 2021, 2},
 	}
 
-	for next, err := groupByScan.Next(); next && err == nil; next, err = groupByScan.Next() {
+	for {
+		next, err := groupByScan.Next()
+		if err != nil {
+			t.Fatalf("failed to get next: %v", err)
+		}
+		if !next {
+			break
+		}
 		majorid, err := groupByScan.GetInt("majorid")
 		if err != nil {
 			t.Fatalf("failed to get majorid: %v", err)
