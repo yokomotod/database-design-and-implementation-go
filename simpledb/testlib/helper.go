@@ -21,6 +21,10 @@ func InsertTestData(t *testing.T, simpledb *server.SimpleDB) error {
 	if err != nil {
 		return err
 	}
+	_, err = planner.ExecuteUpdate("create index majorid_idx on student(majorid)", tx)
+	if err != nil {
+		return err
+	}
 	_, err = planner.ExecuteUpdate("create table dept(did int, dname varchar(8))", tx)
 	if err != nil {
 		return err
