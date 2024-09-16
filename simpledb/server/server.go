@@ -24,6 +24,7 @@ type SimpleDB struct {
 	planner         *plan.Planner
 }
 
+// A constructor useful for debugging
 func NewSimpleDB(dbDir string, blockSize, bufferSize int32) (*SimpleDB, error) {
 	fileManager, err := file.NewManager(dbDir, blockSize)
 	if err != nil {
@@ -47,7 +48,7 @@ func NewSimpleDBWithMetadata(dirname string) (*SimpleDB, error) {
 	return newSimpleDBWithMetadata(dirname, true, BufferSize)
 }
 
-func NewIndexedSimpleDB(dirname string) (*SimpleDB, error) {
+func NewOptimizedSimpleDB(dirname string) (*SimpleDB, error) {
 	return newSimpleDBWithMetadata(dirname, false, BufferSize)
 }
 
@@ -76,11 +77,13 @@ func newSimpleDBWithMetadata(dirname string, useBasic bool, bufferSize int32) (*
 		return nil, fmt.Errorf("metadata.NewManager: %w", err)
 	}
 
-	queryPlanner := plan.NewBasicQueryPlanner(db.metadataManager)
+	var queryPlanner plan.QueryPlanner
 	var updatePlanner plan.UpdatePlanner
 	if useBasic {
+		queryPlanner = plan.NewBasicQueryPlanner(db.metadataManager)
 		updatePlanner = plan.NewBasicUpdatePlanner(db.metadataManager)
 	} else {
+		queryPlanner = plan.NewHeuristicQueryPlanner(db.metadataManager)
 		updatePlanner = plan.NewIndexUpdatePlanner(db.metadataManager)
 	}
 	db.planner = plan.NewPlanner(queryPlanner, updatePlanner)

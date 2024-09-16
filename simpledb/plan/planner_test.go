@@ -12,7 +12,7 @@ func TestPlannerStudent(t *testing.T) {
 		useBasic bool
 	}{
 		{"Basic", true},
-		{"Indexed", false},
+		{"Optimized", false},
 	}
 
 	for _, c := range cases {
@@ -22,7 +22,7 @@ func TestPlannerStudent(t *testing.T) {
 			if c.useBasic {
 				simpleDB, err = server.NewSimpleDBWithMetadata(path.Join(t.TempDir(), "studentdb"))
 			} else {
-				simpleDB, err = server.NewIndexedSimpleDB(path.Join(t.TempDir(), "studentdb"))
+				simpleDB, err = server.NewOptimizedSimpleDB(path.Join(t.TempDir(), "studentdb"))
 			}
 			if err != nil {
 				t.Fatalf("failed to create simpledb: %v", err)
