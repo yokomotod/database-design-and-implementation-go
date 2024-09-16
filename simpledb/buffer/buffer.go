@@ -44,6 +44,10 @@ func (b *Buffer) Pin() {
 }
 
 func (b *Buffer) Unpin() {
+	if b.pins <= 0 {
+		panic(fmt.Sprintf("unpin() called on unpinned buffer[block=%+v]=%dpins", b.block, b.pins))
+	}
+
 	b.pins--
 }
 
