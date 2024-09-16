@@ -243,6 +243,7 @@ func (ts *TableScan) moveToNewBlock() error {
 		return err
 	}
 	ts.currentSlot = -1
+	ts.TotalBlkNum++
 	return nil
 }
 
