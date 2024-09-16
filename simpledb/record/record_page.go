@@ -3,6 +3,7 @@ package record
 import (
 	"simpledb/file"
 	"simpledb/tx"
+	"simpledb/util/logger"
 )
 
 type InUseFlag int32
@@ -13,16 +14,21 @@ const (
 )
 
 type RecordPage struct {
+	logger *logger.Logger
+
 	tx     *tx.Transaction
 	blk    file.BlockID
 	layout *Layout
 }
 
 func NewRecordPage(tx *tx.Transaction, blk file.BlockID, layout *Layout) (*RecordPage, error) {
+	logger := logger.New("record.RecordPage", logger.Trace)
+
+	logger.Tracef("NewRecordPage(): tx.Pin(%+v)", blk)
 	if err := tx.Pin(blk); err != nil {
 		return nil, err
 	}
-	return &RecordPage{tx, blk, layout}, nil
+	return &RecordPage{logger, tx, blk, layout}, nil
 }
 
 func (rp *RecordPage) GetInt(slot int32, fieldName string) (int32, error) {

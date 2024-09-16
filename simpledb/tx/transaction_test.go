@@ -74,6 +74,7 @@ func TestTransaction(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Logf("start transaction 3\n")
 	tx3, err := tx.New(fm, lm, bm)
 	if err != nil {
 		t.Fatal(err)

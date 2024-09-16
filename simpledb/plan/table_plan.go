@@ -5,6 +5,7 @@ import (
 	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
+	"simpledb/util/logger"
 )
 
 var _ Plan = (*TablePlan)(nil)
@@ -17,6 +18,9 @@ type TablePlan struct {
 }
 
 func NewTablePlan(tx *tx.Transaction, tableName string, md *metadata.Manager) (*TablePlan, error) {
+	logger := logger.New("plan.TablePlan", logger.Trace)
+	logger.Tracef("NewTablePlan(%q)", tableName)
+
 	layout, err := md.GetLayout(tableName, tx)
 	if err != nil {
 		return nil, err

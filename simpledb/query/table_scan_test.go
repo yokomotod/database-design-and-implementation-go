@@ -28,6 +28,9 @@ func TestTableScan(t *testing.T) {
 		offset := layout.Offset(fieldName)
 		fmt.Printf("%s has offset %d\n", fieldName, offset)
 	}
+	fmt.Printf("slot size is %d\n", layout.SlotSize())
+	fmt.Printf("records per block = %d/%d = %d\n", 400, layout.SlotSize(), 400/layout.SlotSize())
+
 	fmt.Println("Filling the table with 50 random records.")
 	tableScan, err := query.NewTableScan(transaction, "T", layout)
 	if err != nil {
