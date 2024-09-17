@@ -43,11 +43,11 @@ func NewTableManager(isNew bool, tx *tx.Transaction) (*TableManager, error) {
 
 	tableManager := &TableManager{logger, tableCatalogLayout, fieldCatalogLayout}
 	if isNew {
-		logger.Tracef("NewTableManager(): CreateTable(%q)", tableCatalogTableName)
+		logger.Tracef("(%q) NewTableManager(): CreateTable", tableCatalogTableName)
 		if err := tableManager.CreateTable(tableCatalogTableName, tableCatalogSchema, tx); err != nil {
 			return nil, err
 		}
-		logger.Tracef("NewTableManager(): CreateTable(%q)", fieldCatalogTableName)
+		logger.Tracef("(%q) NewTableManager(): CreateTable", fieldCatalogTableName)
 		if err := tableManager.CreateTable(fieldCatalogTableName, fieldCatalogSchema, tx); err != nil {
 			return nil, err
 		}
@@ -56,7 +56,7 @@ func NewTableManager(isNew bool, tx *tx.Transaction) (*TableManager, error) {
 }
 
 func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx *tx.Transaction) error {
-	tm.logger.Tracef("CreateTable(%q)", tableName)
+	tm.logger.Tracef("(%q) CreateTable", tableName)
 
 	layout := record.NewLayoutFromSchema(schema)
 	tableCatalog, err := query.NewTableScan(tx, tableCatalogTableName, tm.tableCatalogLayout)
@@ -65,7 +65,7 @@ func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx 
 	}
 	defer tableCatalog.Close()
 
-	tm.logger.Tracef("CreateTable(): tableCatalog.Insert(): `%s`", tableName)
+	tm.logger.Tracef("(%q) CreateTable(): tableCatalog.Insert", tableName)
 	if err := tableCatalog.Insert(); err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx 
 	defer fieldCatalog.Close()
 
 	for _, fieldName := range schema.Fields() {
-		tm.logger.Tracef("CreateTable(): fieldCatalog.Insert(): `%s.%s`", tableName, fieldName)
+		tm.logger.Tracef("(%q) CreateTable(): fieldCatalog.Insert(): `%s.%s`", tableName, tableName, fieldName)
 		if err := fieldCatalog.Insert(); err != nil {
 			return err
 		}
@@ -107,9 +107,9 @@ func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx 
 }
 
 func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record.Layout, error) {
-	tm.logger.Tracef("GetLayout(%q)", tableName)
+	tm.logger.Tracef("(%q) GetLayout", tableName)
 	defer func() {
-		tm.logger.Tracef("GetLayout(%q): done", tableName)
+		tm.logger.Tracef("(%q) GetLayout: done", tableName)
 	}()
 
 	var size int32 = -1
@@ -131,13 +131,13 @@ func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record
 		if err != nil {
 			return nil, err
 		}
-		tm.logger.Tracef("GetLayout(%q): tableCatalog.Next(): `%s`", tableName, t)
+		tm.logger.Tracef("(%q) GetLayout: tableCatalog.Next(): `%s`", tableName, t)
 		if t == tableName {
 			size, err = tableCatalog.GetInt(tableCatalogFieldSlotSize)
 			if err != nil {
 				return nil, err
 			}
-			tm.logger.Tracef("GetLayout(%q): tableCatalog.Next(): size=%d", tableName, size)
+			tm.logger.Tracef("(%q) GetLayout: tableCatalog.Next(): size=%d", tableName, size)
 			break
 		}
 	}
@@ -162,7 +162,7 @@ func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record
 		if err != nil {
 			return nil, err
 		}
-		tm.logger.Tracef("GetLayout(%q): fieldCatalog.Next(): `%s`", tableName, t)
+		tm.logger.Tracef("(%q) GetLayout: fieldCatalog.Next(): `%s`", tableName, t)
 		if t == tableName {
 			fldname, err := fieldCatalog.GetString(fieldCatalogFieldFieldName)
 			if err != nil {
@@ -180,7 +180,7 @@ func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record
 			if err != nil {
 				return nil, err
 			}
-			tm.logger.Tracef("GetLayout(%q): fieldCatalog.Next(): fldname=%q, fldtype=%d, fldlen=%d, offset=%d", tableName, fldname, fldtype, fldlen, offset)
+			tm.logger.Tracef("(%q) GetLayout: fieldCatalog.Next(): fldname=%q, fldtype=%d, fldlen=%d, offset=%d", tableName, fldname, fldtype, fldlen, offset)
 			offsets[fldname] = offset
 			schema.AddField(fldname, record.FieldType(fldtype), fldlen)
 		}

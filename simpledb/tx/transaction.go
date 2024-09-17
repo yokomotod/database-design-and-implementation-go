@@ -84,12 +84,12 @@ func (tx *Transaction) Recover() error {
 }
 
 func (tx *Transaction) Pin(blk file.BlockID) error {
-	tx.logger.Tracef("Pin(%+v)", blk)
+	tx.logger.Tracef("(%q) Pin(%+v)", blk.FileName, blk)
 	return tx.mybuffers.pin(blk)
 }
 
 func (tx *Transaction) Unpin(blk file.BlockID) {
-	tx.logger.Tracef("Unpin(%+v)", blk)
+	tx.logger.Tracef("(%q) Unpin(%+v)", blk.FileName, blk)
 	tx.mybuffers.unpin(blk)
 }
 
@@ -162,7 +162,7 @@ func (tx *Transaction) Size(filename string) (int32, error) {
 }
 
 func (tx *Transaction) Append(filename string) (file.BlockID, error) {
-	tx.logger.Tracef("Append(%q)", filename)
+	tx.logger.Tracef("(%q) Append", filename)
 	dummyblk := file.NewBlockID(filename, endOfFile)
 	if err := tx.concurMgr.XLock(dummyblk); err != nil {
 		return file.BlockID{}, err
@@ -173,7 +173,7 @@ func (tx *Transaction) Append(filename string) (file.BlockID, error) {
 		return file.BlockID{}, err
 	}
 
-	tx.logger.Tracef("wrote block from append %+v", blk)
+	tx.logger.Tracef("(%q) wrote block from append %+v", blk.FileName, blk)
 
 	return blk, nil
 }

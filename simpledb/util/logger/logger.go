@@ -58,24 +58,3 @@ func (l *Logger) logf(level LogLevel, format string, v ...interface{}) {
 		log.Printf("["+lv+"] ["+name+"] "+format, v...)
 	}
 }
-
-type FileManagerLogger struct {
-	logFileLogger   *Logger
-	otherFileLogger *Logger
-
-	LogFile string
-}
-
-func NewFileManagerLogger(name string, logFileLevel, otherFileLevel LogLevel) *FileManagerLogger {
-	return &FileManagerLogger{
-		logFileLogger:   New(name, logFileLevel),
-		otherFileLogger: New(name, otherFileLevel),
-	}
-}
-
-func (l *FileManagerLogger) Get(name string) *Logger {
-	if name == l.LogFile {
-		return l.logFileLogger
-	}
-	return l.otherFileLogger
-}

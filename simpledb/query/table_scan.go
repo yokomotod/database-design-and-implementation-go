@@ -27,20 +27,21 @@ type TableScan struct {
 func NewTableScan(tx *tx.Transaction, tableName string, layout *record.Layout) (*TableScan, error) {
 	logger := logger.New("query.TableScan", logger.Trace)
 
-	tableScan := &TableScan{logger, tx, layout, nil, tableName + ".tbl", -1, 0}
+	filename := tableName + ".tbl"
+	tableScan := &TableScan{logger, tx, layout, nil, filename, -1, 0}
 
-	logger.Debugf("NewTableScan(): tx.Size(%q)", tableScan.filename)
+	logger.Debugf("(%q) NewTableScan(): tx.Size(%q)", filename, tableScan.filename)
 	size, err := tx.Size(tableScan.filename)
 	if err != nil {
 		return nil, err
 	}
 	if size == 0 {
-		logger.Debugf("NewTableScan(): size=0, moveToNewBlock()")
+		logger.Debugf("(%q) NewTableScan(): size=0, moveToNewBlock()", filename)
 		if err := tableScan.moveToNewBlock(); err != nil {
 			return nil, err
 		}
 	} else {
-		logger.Debugf("NewTableScan(): size=%d, moveToBlock(0)", size)
+		logger.Debugf("(%q) NewTableScan(): size=%d, moveToBlock(0)", filename, size)
 		if err := tableScan.moveToBlock(0); err != nil {
 			return nil, err
 		}
@@ -60,7 +61,7 @@ func (ts *TableScan) BeforeFirst() error {
 func (ts *TableScan) Next() (bool, error) {
 	var err error
 	for {
-		ts.logger.Tracef("Next(): rp.NextAfter(%d)", ts.currentSlot)
+		ts.logger.Tracef("(%q) Next(): rp.NextAfter(%d)", ts.filename, ts.currentSlot)
 		ts.currentSlot, err = ts.rp.NextAfter(ts.currentSlot)
 		if err != nil {
 			return false, err
@@ -115,7 +116,7 @@ func (ts *TableScan) HasField(fieldName string) bool {
 
 func (ts *TableScan) Close() {
 	if ts.rp != nil {
-		ts.logger.Debugf("Close(): Unpin(%+v)", ts.rp.Block())
+		ts.logger.Debugf("(%q) Close(): Unpin(%+v)", ts.filename, ts.rp.Block())
 		ts.tx.Unpin(ts.rp.Block())
 	}
 }
@@ -157,21 +158,21 @@ func (ts *TableScan) Insert() error {
 	if err != nil {
 		return err
 	}
-	ts.logger.Tracef("Insert(): currentSlot=%d, nextSlot=%d", ts.currentSlot, nextSlot)
+	ts.logger.Tracef("(%q) Insert(): currentSlot=%d, nextSlot=%d", ts.filename, ts.currentSlot, nextSlot)
 	ts.currentSlot = nextSlot
 	for ts.currentSlot < 0 {
-		ts.logger.Debugf("Insert(): nextSlot=%d", nextSlot)
+		ts.logger.Debugf("(%q) Insert(): nextSlot=%d", ts.filename, nextSlot)
 		atLastBlock, err := ts.atLastBlock()
 		if err != nil {
 			return err
 		}
 		if atLastBlock {
-			ts.logger.Debugf("Insert(): atLastBlock=true, moveToNewBlock()")
+			ts.logger.Debugf("(%q) Insert(): atLastBlock=true, moveToNewBlock()", ts.filename)
 			if err := ts.moveToNewBlock(); err != nil {
 				return err
 			}
 		} else {
-			ts.logger.Debugf("Insert(): atLastBlock=false, moveToBlock(%d)", ts.rp.Block().Number+1)
+			ts.logger.Debugf("(%q) Insert(): atLastBlock=false, moveToBlock(%d)", ts.filename, ts.rp.Block().Number+1)
 			if err := ts.moveToBlock(ts.rp.Block().Number + 1); err != nil {
 				return err
 			}
@@ -237,7 +238,7 @@ func (ts *TableScan) moveToNewBlock() error {
 }
 
 func (ts *TableScan) atLastBlock() (bool, error) {
-	ts.logger.Debugf("atLastBlock(): tx.Size(%q)", ts.filename)
+	ts.logger.Debugf("(%q) atLastBlock(): tx.Size", ts.filename)
 	fileSize, err := ts.tx.Size(ts.filename)
 	if err != nil {
 		return false, err

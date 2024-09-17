@@ -57,7 +57,7 @@ func (sm *StatManager) GetStatInfo(tableName string, layout *record.Layout, tx *
 	sm.mux.Lock()
 	defer sm.mux.Unlock()
 
-	sm.logger.Tracef("GetStatInfo(%q)", tableName)
+	sm.logger.Tracef("(%q) GetStatInfo", tableName)
 
 	sm.numCalls++
 	if sm.numCalls > 100 {
@@ -118,7 +118,7 @@ func (sm *StatManager) refreshStatistics(tx *tx.Transaction) error {
 }
 
 func (sm *StatManager) calcTableStats(tableName string, layout *record.Layout, tx *tx.Transaction) (*StatInfo, error) {
-	sm.logger.Tracef("calcTableStats(%q)", tableName)
+	sm.logger.Tracef("(%q) calcTableStats", tableName)
 
 	numRecs := 0
 	numBlocks := 0
@@ -144,6 +144,6 @@ func (sm *StatManager) calcTableStats(tableName string, layout *record.Layout, t
 		}
 		numBlocks = int(rid.BlockNumber()) + 1
 	}
-	sm.logger.Debugf("calcTableStats(%q): numRecs=%d, numBlocks=%d", tableName, numRecs, numBlocks)
+	sm.logger.Debugf("(%q) calcTableStats: numRecs=%d, numBlocks=%d", tableName, numRecs, numBlocks)
 	return NewStatInfo(numBlocks, numRecs), nil
 }

@@ -19,7 +19,7 @@ type TablePlan struct {
 
 func NewTablePlan(tx *tx.Transaction, tableName string, md *metadata.Manager) (*TablePlan, error) {
 	logger := logger.New("plan.TablePlan", logger.Trace)
-	logger.Tracef("NewTablePlan(%q)", tableName)
+	logger.Tracef("(%q) NewTablePlan", tableName)
 
 	layout, err := md.GetLayout(tableName, tx)
 	if err != nil {

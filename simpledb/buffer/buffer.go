@@ -48,16 +48,16 @@ func (b *Buffer) SetModified(txNum int32, lsn int32) {
 
 func (b *Buffer) Pin() {
 	b.pins++
-	b.logger.Tracef("Pin(): buffer[%s]=%dpins block %+v", b.debugName, b.pins, b.block)
+	b.logger.Tracef("(%q) Pin(): buffer[%s]=%dpins block %+v", b.block.FileName, b.debugName, b.pins, b.block)
 }
 
 func (b *Buffer) Unpin() {
 	if b.pins <= 0 {
-		panic(fmt.Sprintf("unpin() called on unpinned buffer[%s]=%dpins block %+v", b.debugName, b.pins, b.block))
+		panic(fmt.Sprintf("(%q) unpin() called on unpinned buffer[%s]=%dpins block %+v", b.block.FileName, b.debugName, b.pins, b.block))
 	}
 
 	b.pins--
-	b.logger.Tracef("Unpin(): buffer[%s]=%dpins block %+v", b.debugName, b.pins, b.block)
+	b.logger.Tracef("(%q) Unpin(): buffer[%s]=%dpins block %+v", b.block.FileName, b.debugName, b.pins, b.block)
 }
 
 func (b *Buffer) IsPinned() bool {
@@ -65,11 +65,11 @@ func (b *Buffer) IsPinned() bool {
 }
 
 func (b *Buffer) AssignToBlock(blk file.BlockID) error {
-	b.logger.Tracef("AssignToBlock(): buffer[%s] old=%+v new=%+v", b.debugName, b.block, blk)
+	b.logger.Tracef("(%q) AssignToBlock(): buffer[%s] old=%+v new=%+v", blk.FileName, b.debugName, b.block, blk)
 	b.flush()
 	b.block = blk
 
-	b.logger.Tracef("AssignToBlock(): read block %+v to buffer[%s]", blk, b.debugName)
+	b.logger.Tracef("(%q) AssignToBlock(): read block %+v to buffer[%s]", blk.FileName, blk, b.debugName)
 	if err := b.fileManager.Read(blk, b.contents); err != nil {
 		return fmt.Errorf("fileManager.Read: %w", err)
 	}
@@ -83,7 +83,7 @@ func (b *Buffer) flush() error {
 		return nil
 	}
 
-	b.logger.Tracef("flush(): write buffer[%s] to block %+v", b.debugName, b.block)
+	b.logger.Tracef("(%q) flush(): write buffer[%s] to block %+v", b.block.FileName, b.debugName, b.block)
 	if err := b.fileManager.Write(b.block, b.contents); err != nil {
 		return fmt.Errorf("fileManager.Write: %w", err)
 	}
@@ -143,7 +143,7 @@ func (bm *Manager) Unpin(buff *Buffer) {
 	buff.Unpin()
 	if !buff.IsPinned() {
 		bm.numAvailable++
-		bm.logger.Tracef("Unpin(): numAvailable=%d/%d", bm.numAvailable, len(bm.bufferPool))
+		bm.logger.Tracef("(%q) Unpin(): numAvailable=%d/%d", buff.Block().FileName, bm.numAvailable, len(bm.bufferPool))
 		// TODO: notifyAll();
 	}
 }
@@ -179,7 +179,7 @@ func (bm *Manager) tryToPin(blk file.BlockID) (*Buffer, error) {
 	}
 	if !buff.IsPinned() {
 		bm.numAvailable--
-		bm.logger.Tracef("tryToPin(): numAvailable=%d/%d", bm.numAvailable, len(bm.bufferPool))
+		bm.logger.Tracef("(%q) tryToPin(): numAvailable=%d/%d", buff.Block().FileName, bm.numAvailable, len(bm.bufferPool))
 	}
 	buff.Pin()
 	return buff, nil

@@ -24,7 +24,7 @@ type RecordPage struct {
 func NewRecordPage(tx *tx.Transaction, blk file.BlockID, layout *Layout) (*RecordPage, error) {
 	logger := logger.New("record.RecordPage", logger.Trace)
 
-	logger.Tracef("NewRecordPage(): tx.Pin(%+v)", blk)
+	logger.Tracef("(%q) NewRecordPage(): tx.Pin(%+v)", blk.FileName, blk)
 	if err := tx.Pin(blk); err != nil {
 		return nil, err
 	}
