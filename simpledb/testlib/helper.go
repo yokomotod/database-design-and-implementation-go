@@ -77,17 +77,10 @@ func InsertTestData(t *testing.T, simpledb *server.SimpleDB) error {
 		}
 	}
 
-	// 強制的に統計情報を更新 (Metadata Managerに機能追加を検討)
 	mdm := simpledb.MetadataManager()
-	studentLayout, err := mdm.GetLayout("student", tx)
+	err = mdm.ForceRefreshStatistics(tx)
 	if err != nil {
 		return err
-	}
-	for i := 0; i <= 100; i++ {
-		_, err = mdm.GetStatInfo("student", studentLayout, tx)
-		if err != nil {
-			return err
-		}
 	}
 
 	err = tx.Commit()
@@ -181,17 +174,10 @@ func InsertMiddleTestData(t *testing.T, simpledb *server.SimpleDB) error {
 		}
 	}
 
-	// 強制的に統計情報を更新 (Metadata Managerに機能追加を検討)
 	mdm := simpledb.MetadataManager()
-	studentLayout, err := mdm.GetLayout("student", tx)
+	err = mdm.ForceRefreshStatistics(tx)
 	if err != nil {
 		return err
-	}
-	for i := 0; i <= 100; i++ {
-		_, err = mdm.GetStatInfo("student", studentLayout, tx)
-		if err != nil {
-			return err
-		}
 	}
 
 	err = tx.Commit()
@@ -299,17 +285,10 @@ func InsertLargeTestData(t *testing.T, simpledb *server.SimpleDB) error {
 		}
 	}
 
-	// 強制的に統計情報を更新 (Metadata Managerに機能追加を検討)
 	mdm := simpledb.MetadataManager()
-	studentLayout, err := mdm.GetLayout("student", tx)
+	err = mdm.ForceRefreshStatistics(tx)
 	if err != nil {
 		return err
-	}
-	for i := 0; i <= 100; i++ {
-		_, err = mdm.GetStatInfo("student", studentLayout, tx)
-		if err != nil {
-			return err
-		}
 	}
 
 	err = tx.Commit()

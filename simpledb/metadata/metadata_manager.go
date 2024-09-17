@@ -69,3 +69,7 @@ func (mm *Manager) GetIndexInfo(tableName string, tx *tx.Transaction) (map[strin
 func (mm *Manager) GetStatInfo(tableName string, layout *record.Layout, tx *tx.Transaction) (*StatInfo, error) {
 	return mm.statManager.GetStatInfo(tableName, layout, tx)
 }
+
+func (mm *Manager) ForceRefreshStatistics(tx *tx.Transaction) error {
+	return mm.statManager.ForceRefreshStatistics(tx)
+}

@@ -77,6 +77,10 @@ func (sm *StatManager) GetStatInfo(tableName string, layout *record.Layout, tx *
 	return sm.tableStats[tableName], nil
 }
 
+func (sm *StatManager) ForceRefreshStatistics(tx *tx.Transaction) error {
+	return sm.refreshStatistics(tx)
+}
+
 func (sm *StatManager) refreshStatistics(tx *tx.Transaction) error {
 	sm.logger.Tracef("refreshStatistics()")
 
