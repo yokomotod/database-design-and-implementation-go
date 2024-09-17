@@ -9,6 +9,8 @@ import (
 	"simpledb/tx"
 )
 
+var _ UpdatePlanner = (*IndexUpdatePlanner)(nil)
+
 type IndexUpdatePlanner struct {
 	mdm *metadata.Manager
 }
@@ -183,4 +185,26 @@ func (iup *IndexUpdatePlanner) ExecuteModify(data *parse.ModifyData, tx *tx.Tran
 	}
 	scan.Close()
 	return count, nil
+}
+
+func (iup *IndexUpdatePlanner) ExecuteCreateTable(data *parse.CreateTableData, tx *tx.Transaction) (int, error) {
+	tableName := data.TableName
+	schema := data.NewSchema
+	err := iup.mdm.CreateTable(tableName, schema, tx)
+	return 0, err
+}
+
+func (iup *IndexUpdatePlanner) ExecuteCreateView(data *parse.CreateViewData, tx *tx.Transaction) (int, error) {
+	viewName := data.ViewName
+	viewDef := data.ViewDef()
+	err := iup.mdm.CreateView(viewName, viewDef, tx)
+	return 0, err
+}
+
+func (iup *IndexUpdatePlanner) ExecuteCreateIndex(data *parse.CreateIndexData, tx *tx.Transaction) (int, error) {
+	indexName := data.IndexName
+	tableName := data.TableName
+	fieldName := data.FieldName
+	err := iup.mdm.CreateIndex(indexName, tableName, fieldName, tx)
+	return 0, err
 }
