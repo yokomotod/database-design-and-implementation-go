@@ -65,7 +65,11 @@ func (iup *IndexUpdatePlanner) ExecuteInsert(data *parse.InsertData, tx *tx.Tran
 
 func (iup *IndexUpdatePlanner) ExecuteDelete(data *parse.DeleteData, tx *tx.Transaction) (int, error) {
 	tableName := data.TableName
-	plan, err := NewTablePlan(tx, tableName, iup.mdm)
+	tablePlan, err := NewTablePlan(tx, tableName, iup.mdm)
+	if err != nil {
+		return 0, err
+	}
+	selectPlan, err := NewSelectPlan(tablePlan, data.Pred)
 	if err != nil {
 		return 0, err
 	}
@@ -73,7 +77,7 @@ func (iup *IndexUpdatePlanner) ExecuteDelete(data *parse.DeleteData, tx *tx.Tran
 	if err != nil {
 		return 0, err
 	}
-	scan, err := plan.Open()
+	scan, err := selectPlan.Open()
 	if err != nil {
 		return 0, err
 	}
