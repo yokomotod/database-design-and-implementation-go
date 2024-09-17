@@ -43,7 +43,15 @@ func NewSimpleDB(dbDir string, blockSize, bufferSize int32) (*SimpleDB, error) {
 }
 
 func NewSimpleDBWithMetadata(dirname string) (*SimpleDB, error) {
-	db, err := NewSimpleDB(dirname, BlockSize, BufferSize)
+	return newSimpleDBWithMetadata(dirname, true, BufferSize)
+}
+
+func NewIndexedSimpleDB(dirname string) (*SimpleDB, error) {
+	return newSimpleDBWithMetadata(dirname, false, BufferSize)
+}
+
+func newSimpleDBWithMetadata(dirname string, useBasic bool, bufferSize int32) (*SimpleDB, error) {
+	db, err := NewSimpleDB(dirname, BlockSize, bufferSize)
 	if err != nil {
 		return nil, fmt.Errorf("SimpleDB: %w", err)
 	}
@@ -66,7 +74,12 @@ func NewSimpleDBWithMetadata(dirname string) (*SimpleDB, error) {
 	}
 
 	queryPlanner := plan.NewBasicQueryPlanner(db.metadataManager)
-	updatePlanner := plan.NewBasicUpdatePlanner(db.metadataManager)
+	var updatePlanner plan.UpdatePlanner
+	if useBasic {
+		updatePlanner = plan.NewBasicUpdatePlanner(db.metadataManager)
+	} else {
+		updatePlanner = plan.NewIndexUpdatePlanner(db.metadataManager)
+	}
 	db.planner = plan.NewPlanner(queryPlanner, updatePlanner)
 
 	if err := tx.Commit(); err != nil {
