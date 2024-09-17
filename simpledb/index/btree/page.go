@@ -240,7 +240,7 @@ func (bp *BTreePage) makeDefaultRecord(blk file.BlockID, pos int32) error {
 func (bp *BTreePage) transferRecs(slot int32, dest *BTreePage) error {
 	destSlot := int32(0)
 	for {
-		nRecs, err := dest.GetNumRecs()
+		nRecs, err := bp.GetNumRecs()
 		if err != nil {
 			return err
 		}
@@ -259,7 +259,7 @@ func (bp *BTreePage) transferRecs(slot int32, dest *BTreePage) error {
 				return err
 			}
 		}
-		if err := dest.Delete(slot); err != nil {
+		if err := bp.Delete(slot); err != nil {
 			return err
 		}
 		destSlot++
