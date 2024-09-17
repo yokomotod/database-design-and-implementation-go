@@ -1,7 +1,7 @@
 package plan
 
 import (
-	"fmt"
+	"errors"
 	"simpledb/metadata"
 	"simpledb/parse"
 	"simpledb/query"
@@ -19,30 +19,27 @@ func NewBasicUpdatePlanner(mdm *metadata.Manager) *BasicUpdatePlanner {
 }
 
 func (up *BasicUpdatePlanner) ExecuteInsert(data *parse.InsertData, tx *tx.Transaction) (int, error) {
-	tableName := data.TableName
-	tablePlan, err := NewTablePlan(tx, tableName, up.mdm)
+	tablePlan, err := NewTablePlan(tx, data.TableName, up.mdm)
 	if err != nil {
 		return 0, err
 	}
-
 	scan, err := tablePlan.Open()
 	if err != nil {
 		return 0, err
 	}
 	defer scan.Close()
 
-	us, ok := scan.(query.UpdateScan)
+	updateScan, ok := scan.(query.UpdateScan)
 	if !ok {
-		return 0, fmt.Errorf("cannot insert: %v", data)
+		return 0, errors.New("ExecuteInsert: plan is not a table plan")
 	}
-	err = us.Insert()
-	if err != nil {
+	if err := updateScan.Insert(); err != nil {
 		return 0, err
 	}
+
 	for i, field := range data.Fields {
-		value := data.Values[i]
-		err = us.SetVal(field, value)
-		if err != nil {
+		val := data.Values[i]
+		if err := updateScan.SetVal(field, val); err != nil {
 			return 0, err
 		}
 	}
@@ -67,21 +64,19 @@ func (up *BasicUpdatePlanner) ExecuteDelete(data *parse.DeleteData, tx *tx.Trans
 	}
 	defer scan.Close()
 
-	us, ok := scan.(query.UpdateScan)
+	updateScan, ok := scan.(query.UpdateScan)
 	if !ok {
-		return 0, fmt.Errorf("cannot delete: %v", data)
+		return 0, errors.New("ExecuteDelete: plan is not a table plan")
 	}
 	count := 0
 	for {
-		hasNext, err := scan.Next()
-		if err != nil {
+		if hasNext, err := scan.Next(); err != nil {
 			return 0, err
-		}
-		if !hasNext {
+		} else if !hasNext {
 			break
 		}
-		err = us.Delete()
-		if err != nil {
+
+		if err := updateScan.Delete(); err != nil {
 			return 0, err
 		}
 		count++
@@ -90,8 +85,7 @@ func (up *BasicUpdatePlanner) ExecuteDelete(data *parse.DeleteData, tx *tx.Trans
 }
 
 func (up *BasicUpdatePlanner) ExecuteModify(data *parse.ModifyData, tx *tx.Transaction) (int, error) {
-	tableName := data.TableName
-	tablePlan, err := NewTablePlan(tx, tableName, up.mdm)
+	tablePlan, err := NewTablePlan(tx, data.TableName, up.mdm)
 	if err != nil {
 		return 0, err
 	}
@@ -107,29 +101,29 @@ func (up *BasicUpdatePlanner) ExecuteModify(data *parse.ModifyData, tx *tx.Trans
 	}
 	defer scan.Close()
 
-	us, ok := scan.(query.UpdateScan)
+	updateScan, ok := scan.(query.UpdateScan)
 	if !ok {
-		return 0, fmt.Errorf("cannot modify: %v", data)
+		return 0, errors.New("ExecuteModify: plan is not a table plan")
 	}
 	count := 0
 	for {
-		hasNext, err := scan.Next()
-		if err != nil {
+		if hasNext, err := scan.Next(); err != nil {
 			return 0, err
-		}
-		if !hasNext {
+		} else if !hasNext {
 			break
 		}
-		newValue, err := data.NewValue.Evaluate(scan)
+
+		newVal, err := data.NewValue.Evaluate(scan)
 		if err != nil {
 			return 0, err
 		}
-		err = us.SetVal(data.TargetField, newValue)
-		if err != nil {
+		if err := updateScan.SetVal(data.TargetField, newVal); err != nil {
 			return 0, err
 		}
+
 		count++
 	}
+
 	return count, nil
 }
 
