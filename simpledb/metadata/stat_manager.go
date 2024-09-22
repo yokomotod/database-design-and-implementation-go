@@ -39,7 +39,7 @@ type StatManager struct {
 }
 
 func NewStatManager(tableManager *TableManager, tx *tx.Transaction) (*StatManager, error) {
-	logger := logger.New("metadata.StatManager", logger.Trace)
+	logger := logger.New("metadata.StatManager", logger.Info)
 
 	statManager := &StatManager{logger, tableManager, nil, 0, &sync.Mutex{}}
 	err := statManager.refreshStatistics(tx)

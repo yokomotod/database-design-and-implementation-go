@@ -25,7 +25,7 @@ type TableScan struct {
 }
 
 func NewTableScan(tx *tx.Transaction, tableName string, layout *record.Layout) (*TableScan, error) {
-	logger := logger.New("query.TableScan", logger.Trace)
+	logger := logger.New("query.TableScan", logger.Info)
 
 	filename := tableName + ".tbl"
 	tableScan := &TableScan{logger, tx, layout, nil, filename, -1, 0}

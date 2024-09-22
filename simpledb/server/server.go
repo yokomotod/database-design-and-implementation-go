@@ -65,9 +65,9 @@ func newSimpleDBWithMetadata(dirname string, useBasic bool, bufferSize int32) (*
 	}
 	isNew := db.fileManager.IsNew()
 	if isNew {
-		logger.Infof("creating new database")
+		logger.Infof("creating new database: %q", dirname)
 	} else {
-		logger.Infof("recovering existing database")
+		logger.Infof("recovering existing database: %q", dirname)
 		if err := tx.Recover(); err != nil {
 			return nil, fmt.Errorf("tx.Recover: %w", err)
 		}
