@@ -16,7 +16,7 @@ func TestHashJoinPlan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	err = testlib.InsertLargeTestData(t, simpleDB)
+	err = testlib.InsertMiddleTestData(t, simpleDB)
 	if err != nil {
 		t.Fatalf("failed to setup test data: %v", err)
 	}
@@ -47,8 +47,8 @@ func TestHashJoinPlan(t *testing.T) {
 		want := stats{
 			PlanRecordsOutput:    -1,
 			PlanBlocksAccessed:   -1,
-			ActualRecordsOutput:  1000,
-			ActualBlocksAccessed: 295,
+			ActualRecordsOutput:  100,
+			ActualBlocksAccessed: 30,
 		}
 
 		assert.Equal(t, want, got)

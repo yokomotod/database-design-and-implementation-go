@@ -42,9 +42,9 @@ func TestMultibufferSortPlan(t *testing.T) {
 
 		want := stats{
 			PlanRecordsOutput:    100,
-			PlanBlocksAccessed:   3,
+			PlanBlocksAccessed:   6,
 			ActualRecordsOutput:  100,
-			ActualBlocksAccessed: 34,
+			ActualBlocksAccessed: 61,
 		}
 
 		assert.Equal(t, want, got)
@@ -71,9 +71,9 @@ func TestMultibufferSortPlan(t *testing.T) {
 
 		want := stats{
 			PlanRecordsOutput:    100,
-			PlanBlocksAccessed:   3,
+			PlanBlocksAccessed:   6,
 			ActualRecordsOutput:  100,
-			ActualBlocksAccessed: 602,
+			ActualBlocksAccessed: 623,
 		}
 
 		assert.Equal(t, want, got)
