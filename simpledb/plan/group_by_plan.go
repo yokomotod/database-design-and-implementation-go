@@ -71,3 +71,7 @@ func (gp *GroupByPlan) DistinctValues(fieldName string) int32 {
 func (gp *GroupByPlan) Schema() *record.Schema {
 	return gp.schema
 }
+
+func (gp *GroupByPlan) Tree() *PlanNode {
+	return NewPlanNode("GroupBy", gp, []*PlanNode{gp.plan.Tree()})
+}

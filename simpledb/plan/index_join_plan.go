@@ -7,6 +7,8 @@ import (
 	"simpledb/record"
 )
 
+var _ Plan = (*IndexJoinPlan)(nil)
+
 type IndexJoinPlan struct {
 	plan1     Plan
 	plan2     Plan
@@ -55,4 +57,8 @@ func (p *IndexJoinPlan) DistinctValues(fieldName string) int32 {
 
 func (p *IndexJoinPlan) Schema() *record.Schema {
 	return p.schema
+}
+
+func (p *IndexJoinPlan) Tree() *PlanNode {
+	return NewPlanNode("IndexJoin", p, []*PlanNode{p.plan1.Tree(), p.plan2.Tree()})
 }

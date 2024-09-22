@@ -90,6 +90,10 @@ func (hjp *HashJoinPlan) Schema() *record.Schema {
 	return hjp.schema
 }
 
+func (hjp *HashJoinPlan) Tree() *PlanNode {
+	return NewPlanNode("HashJoin", hjp, []*PlanNode{hjp.p1.Tree(), hjp.p2.Tree()})
+}
+
 func (hjp *HashJoinPlan) recursiveSplitIntoBucket(p1, p2 *query.TempTable, numBuffs, mod int32) ([]*query.TempTable, []*query.TempTable, error) {
 	hjp.logger.Tracef("recursiveSplitIntoBucket(): p2.TotalBlkNum=%d, numBuffs=%d, mod=%d", p2.TotalBlkNum, numBuffs, mod)
 

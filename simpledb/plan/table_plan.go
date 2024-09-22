@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"fmt"
 	"simpledb/metadata"
 	"simpledb/query"
 	"simpledb/record"
@@ -50,4 +51,8 @@ func (p *TablePlan) DistinctValues(fieldName string) int32 {
 
 func (p *TablePlan) Schema() *record.Schema {
 	return p.layout.Schema()
+}
+
+func (p *TablePlan) Tree() *PlanNode {
+	return NewPlanNode(fmt.Sprintf("Table(%s)", p.tableName), p, nil)
 }

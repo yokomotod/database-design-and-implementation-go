@@ -10,7 +10,7 @@ import (
 	"slices"
 )
 
-var _ Plan = (*SortPlan)(nil)
+var _ Plan = (*MultibufferSortPlan)(nil)
 
 type MultibufferSortPlan struct {
 	logger *logger.Logger
@@ -76,6 +76,10 @@ func (sp *MultibufferSortPlan) DistinctValues(fieldName string) int32 {
 
 func (sp *MultibufferSortPlan) Schema() *record.Schema {
 	return sp.schema
+}
+
+func (sp *MultibufferSortPlan) Tree() *PlanNode {
+	return NewPlanNode("MultibufferSort", sp, []*PlanNode{sp.plan.Tree()})
 }
 
 func (sp *MultibufferSortPlan) multibufferSplitIntoRuns(src query.Scan, numBuffs int32) ([]*query.TempTable, error) {

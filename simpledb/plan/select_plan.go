@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"fmt"
 	"simpledb/query"
 	"simpledb/record"
 )
@@ -47,4 +48,11 @@ func (p *SelectPlan) DistinctValues(fieldName string) int32 {
 
 func (p *SelectPlan) Schema() *record.Schema {
 	return p.plan.Schema()
+}
+
+func (p *SelectPlan) Tree() *PlanNode {
+	return NewPlanNode(fmt.Sprintf("Select(%s)", p.predicate),
+		p,
+		[]*PlanNode{p.plan.Tree()},
+	)
 }
