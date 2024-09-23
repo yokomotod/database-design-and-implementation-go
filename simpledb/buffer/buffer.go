@@ -157,7 +157,7 @@ func (bm *Manager) Pin(blk file.BlockID) (*Buffer, int, error) {
 	bm.mux.Lock()
 	defer bm.mux.Unlock()
 
-	buff, blockAccessed, err := bm.tryToPin(blk)
+	buff, blocksAccessed, err := bm.tryToPin(blk)
 	if err != nil {
 		return nil, 0, fmt.Errorf("bm.tryToPin: %w", err)
 	}
@@ -165,12 +165,12 @@ func (bm *Manager) Pin(blk file.BlockID) (*Buffer, int, error) {
 		return nil, 0, ErrBufferAbort
 	}
 
-	return buff, blockAccessed, nil
+	return buff, blocksAccessed, nil
 }
 
 func (bm *Manager) tryToPin(blk file.BlockID) (*Buffer, int, error) {
 	buff := bm.findExistingBuffer(blk)
-	blockAccessed := 0
+	blocksAccessed := 0
 
 	if buff == nil {
 		buff = bm.chooseUnpinnedBuffer()
@@ -182,9 +182,9 @@ func (bm *Manager) tryToPin(blk file.BlockID) (*Buffer, int, error) {
 			return nil, 0, fmt.Errorf("buff.AssignToBlock: %w", err)
 		}
 		if flushed {
-			blockAccessed = 2
+			blocksAccessed = 2
 		} else {
-			blockAccessed = 1
+			blocksAccessed = 1
 		}
 	}
 	if !buff.IsPinned() {
@@ -192,7 +192,7 @@ func (bm *Manager) tryToPin(blk file.BlockID) (*Buffer, int, error) {
 		bm.logger.Tracef("(%q) tryToPin(): numAvailable=%d/%d", buff.Block().FileName, bm.numAvailable, len(bm.bufferPool))
 	}
 	buff.Pin()
-	return buff, blockAccessed, nil
+	return buff, blocksAccessed, nil
 }
 
 func (bm *Manager) findExistingBuffer(blk file.BlockID) *Buffer {

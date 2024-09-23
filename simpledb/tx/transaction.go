@@ -30,7 +30,7 @@ type Transaction struct {
 	txnum       int32
 	mybuffers   *BufferList
 
-	blockAccessed int
+	blocksAccessed int
 }
 
 func New(fileMgr *file.Manager, logMgr *log.Manager, bufferManager *buffer.Manager) (*Transaction, error) {
@@ -87,13 +87,13 @@ func (tx *Transaction) Recover() error {
 
 func (tx *Transaction) Pin(blk file.BlockID) error {
 	tx.logger.Tracef("(%q) Pin(%+v)", blk.FileName, blk)
-	blockAccessed, err := tx.mybuffers.pin(blk)
+	blocksAccessed, err := tx.mybuffers.pin(blk)
 	if err != nil {
 		return err
 	}
 
-	tx.logger.Tracef("(%q) Pin(%+v) blockAccessed=%d", blk.FileName, blk, blockAccessed)
-	tx.blockAccessed += blockAccessed
+	tx.logger.Tracef("(%q) Pin(%+v) blocksAccessed=%d", blk.FileName, blk, blocksAccessed)
+	tx.blocksAccessed += blocksAccessed
 
 	return nil
 }
@@ -196,12 +196,12 @@ func (tx *Transaction) AvailableBuffers() int32 {
 	return tx.bm.NumAvailable()
 }
 
-func (tx *Transaction) BlockAccessed() int {
-	return tx.blockAccessed
+func (tx *Transaction) BlocksAccessed() int {
+	return tx.blocksAccessed
 }
 
-func (tx *Transaction) ResetBlockAccessed() {
-	tx.blockAccessed = 0
+func (tx *Transaction) ResetblocksAccessed() {
+	tx.blocksAccessed = 0
 }
 
 func nextTxNumber() int32 {
@@ -228,13 +228,13 @@ func newBufferList(bm *buffer.Manager) *BufferList {
 }
 
 func (b *BufferList) pin(blk file.BlockID) (int, error) {
-	buf, blockAccessed, err := b.bm.Pin(blk)
+	buf, blocksAccessed, err := b.bm.Pin(blk)
 	if err != nil {
 		return 0, err
 	}
 	b.buffers[blk] = buf
 	b.pins = append(b.pins, blk)
-	return blockAccessed, nil
+	return blocksAccessed, nil
 }
 
 func (b *BufferList) unpin(blk file.BlockID) {
