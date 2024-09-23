@@ -97,7 +97,7 @@ func MaxLength(length int32) int32 {
 }
 
 type Manager struct {
-	Logger *logger.Logger
+	logger *logger.Logger
 
 	dbDir     string
 	blockSize int32
@@ -138,7 +138,7 @@ func NewManager(dbDir string, blockSize int32) (*Manager, error) {
 	}
 
 	return &Manager{
-		Logger: logger.New("file.Manager", logger.Trace),
+		logger: logger.New("file.Manager", logger.Trace),
 
 		dbDir:     dbDir,
 		blockSize: blockSize,
@@ -160,7 +160,7 @@ func (fm *Manager) Read(blk BlockID, p *Page) error {
 	fm.mux.Lock()
 	defer fm.mux.Unlock()
 
-	fm.Logger.Tracef("(%q) Read(%+v)", blk.FileName, blk)
+	fm.logger.Tracef("(%q) Read(%+v)", blk.FileName, blk)
 
 	f, err := fm.openFile(blk.FileName)
 	if err != nil {
@@ -184,7 +184,7 @@ func (fm *Manager) Write(blk BlockID, p *Page) error {
 	fm.mux.Lock()
 	defer fm.mux.Unlock()
 
-	fm.Logger.Tracef("(%q) Write(%+v)", blk.FileName, blk)
+	fm.logger.Tracef("(%q) Write(%+v)", blk.FileName, blk)
 
 	f, err := fm.openFile(blk.FileName)
 	if err != nil {
@@ -208,7 +208,7 @@ func (fm *Manager) Append(filename string) (BlockID, error) {
 	fm.mux.Lock()
 	defer fm.mux.Unlock()
 
-	fm.Logger.Tracef("(%q) Append", filename)
+	fm.logger.Tracef("(%q) Append", filename)
 
 	newBlockNum, err := fm.Length(filename)
 	if err != nil {
@@ -236,7 +236,7 @@ func (fm *Manager) Append(filename string) (BlockID, error) {
 }
 
 func (fm *Manager) Length(filename string) (int32, error) {
-	fm.Logger.Tracef("(%q) Length(%q)", filename, path.Join(fm.dbDir, filename))
+	fm.logger.Tracef("(%q) Length(%q)", filename, path.Join(fm.dbDir, filename))
 	f, err := fm.openFile(filename)
 	if err != nil {
 		return 0, fmt.Errorf("fm.openFile: %w", err)
@@ -256,7 +256,7 @@ func (fm *Manager) openFile(filename string) (*os.File, error) {
 		return f, nil
 	}
 
-	fm.Logger.Tracef("(%q) os.openFile", filename)
+	fm.logger.Tracef("(%q) os.openFile", filename)
 	f, err := os.OpenFile(path.Join(fm.dbDir, filename), os.O_RDWR|os.O_CREATE, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("os.OpenFile: %w", err)
