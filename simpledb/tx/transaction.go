@@ -29,6 +29,8 @@ type Transaction struct {
 	fm          *file.Manager
 	txnum       int32
 	mybuffers   *BufferList
+
+	blocksAccessed int
 }
 
 func New(fileMgr *file.Manager, logMgr *log.Manager, bufferManager *buffer.Manager) (*Transaction, error) {
@@ -85,7 +87,15 @@ func (tx *Transaction) Recover() error {
 
 func (tx *Transaction) Pin(blk file.BlockID) error {
 	tx.logger.Tracef("(%q) Pin(%+v)", blk.FileName, blk)
-	return tx.mybuffers.pin(blk)
+	blocksAccessed, err := tx.mybuffers.pin(blk)
+	if err != nil {
+		return err
+	}
+
+	tx.logger.Tracef("(%q) Pin(%+v) blocksAccessed=%d", blk.FileName, blk, blocksAccessed)
+	tx.blocksAccessed += blocksAccessed
+
+	return nil
 }
 
 func (tx *Transaction) Unpin(blk file.BlockID) {
@@ -186,6 +196,14 @@ func (tx *Transaction) AvailableBuffers() int32 {
 	return tx.bm.NumAvailable()
 }
 
+func (tx *Transaction) BlocksAccessed() int {
+	return tx.blocksAccessed
+}
+
+func (tx *Transaction) ResetblocksAccessed() {
+	tx.blocksAccessed = 0
+}
+
 func nextTxNumber() int32 {
 	txMutex.Lock()
 	defer txMutex.Unlock()
@@ -209,14 +227,14 @@ func newBufferList(bm *buffer.Manager) *BufferList {
 	}
 }
 
-func (b *BufferList) pin(blk file.BlockID) error {
-	buf, err := b.bm.Pin(blk)
+func (b *BufferList) pin(blk file.BlockID) (int, error) {
+	buf, blocksAccessed, err := b.bm.Pin(blk)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	b.buffers[blk] = buf
 	b.pins = append(b.pins, blk)
-	return nil
+	return blocksAccessed, nil
 }
 
 func (b *BufferList) unpin(blk file.BlockID) {

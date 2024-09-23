@@ -48,15 +48,15 @@ func (p *Predicate) String() string {
 
 // plan.Plan インターフェースの一部を要求する
 type planLike interface {
-	DistinctValues(fieldName string) int
+	DistinctValues(fieldName string) int32
 }
 
-func (p *Predicate) ReductionFactor(plan planLike) int {
-	reductionFactor := 1
+func (p *Predicate) ReductionFactor(plan planLike) int32 {
+	reductionFactor := int32(1)
 	for _, term := range p.terms {
 		rf := term.reductionFactor(plan)
-		if rf == math.MaxInt {
-			return math.MaxInt
+		if rf == math.MaxInt32 {
+			return math.MaxInt32
 		}
 		reductionFactor *= rf
 	}

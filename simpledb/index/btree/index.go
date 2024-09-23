@@ -169,6 +169,6 @@ func (bi *BTreeIndex) Close() error {
 	return nil
 }
 
-func SearchCost(numBlocks, rpb int) int {
-	return 1 + int(math.Log(float64(numBlocks))/math.Log(float64(rpb)))
+func SearchCost(numBlocks, rpb int32) int32 {
+	return 1 + int32(math.Log(float64(numBlocks))/math.Log(float64(rpb)))
 }

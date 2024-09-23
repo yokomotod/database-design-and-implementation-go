@@ -24,15 +24,15 @@ func (p *SelectPlan) Open() (query.Scan, error) {
 	return query.NewSelectScan(scan, p.predicate), nil
 }
 
-func (p *SelectPlan) BlocksAccessed() int {
+func (p *SelectPlan) BlocksAccessed() int32 {
 	return p.plan.BlocksAccessed()
 }
 
-func (p *SelectPlan) RecordsOutput() int {
+func (p *SelectPlan) RecordsOutput() int32 {
 	return p.plan.RecordsOutput() / p.predicate.ReductionFactor(p.plan)
 }
 
-func (p *SelectPlan) DistinctValues(fieldName string) int {
+func (p *SelectPlan) DistinctValues(fieldName string) int32 {
 	if p.predicate.EquatesWithConstant(fieldName) != nil {
 		return 1
 	}

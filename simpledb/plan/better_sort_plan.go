@@ -5,24 +5,20 @@ import (
 	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
-	"simpledb/util/logger"
+	"slices"
 )
 
 var _ Plan = (*SortPlan)(nil)
 
-type SortPlan struct {
-	logger *logger.Logger
-
+type BetterSortPlan struct {
 	plan   Plan
 	tx     *tx.Transaction
 	schema *record.Schema
 	comp   *query.RecordComparator
 }
 
-func NewSortPlan(tx *tx.Transaction, plan Plan, sortFields []string) (*SortPlan, error) {
+func NewBetterSortPlan(tx *tx.Transaction, plan Plan, sortFields []string) (*SortPlan, error) {
 	return &SortPlan{
-		logger: logger.New("plan.SortPlan", logger.Trace),
-
 		plan:   plan,
 		tx:     tx,
 		schema: plan.Schema(),
@@ -30,12 +26,12 @@ func NewSortPlan(tx *tx.Transaction, plan Plan, sortFields []string) (*SortPlan,
 	}, nil
 }
 
-func (sp *SortPlan) Open() (query.Scan, error) {
+func (sp *BetterSortPlan) Open() (query.Scan, error) {
 	src, err := sp.plan.Open()
 	if err != nil {
 		return nil, fmt.Errorf("sp.plan.Open: %w", err)
 	}
-	runs, err := sp.splitIntoRuns(src)
+	runs, err := sp.onebufferSplitIntoRuns(src)
 	if err != nil {
 		return nil, fmt.Errorf("sp.splitIntoRuns: %w", err)
 	}
@@ -54,24 +50,24 @@ func (sp *SortPlan) Open() (query.Scan, error) {
 	return sc, nil
 }
 
-func (sp *SortPlan) BlocksAccessed() int32 {
+func (sp *BetterSortPlan) BlocksAccessed() int32 {
 	mp := NewMaterializePlan(sp.tx, sp.plan)
 	return mp.BlocksAccessed()
 }
 
-func (sp *SortPlan) RecordsOutput() int32 {
+func (sp *BetterSortPlan) RecordsOutput() int32 {
 	return sp.plan.RecordsOutput()
 }
 
-func (sp *SortPlan) DistinctValues(fieldName string) int32 {
+func (sp *BetterSortPlan) DistinctValues(fieldName string) int32 {
 	return sp.plan.DistinctValues(fieldName)
 }
 
-func (sp *SortPlan) Schema() *record.Schema {
+func (sp *BetterSortPlan) Schema() *record.Schema {
 	return sp.schema
 }
 
-func (sp *SortPlan) splitIntoRuns(src query.Scan) ([]*query.TempTable, error) {
+func (sp *BetterSortPlan) onebufferSplitIntoRuns(src query.Scan) ([]*query.TempTable, error) {
 	temps := make([]*query.TempTable, 0)
 	err := src.BeforeFirst()
 	if err != nil {
@@ -87,46 +83,90 @@ func (sp *SortPlan) splitIntoRuns(src query.Scan) ([]*query.TempTable, error) {
 	}
 
 	currentTemp := query.NewTempTable(sp.tx, sp.schema)
-	temps = append(temps, currentTemp)
 	currentScan, err := currentTemp.Open()
 	if err != nil {
 		return nil, err
 	}
 
-	// src < currentScan になるまでコピーし続けることで、 昇順にソートされた TempTable（run）が作成される。
-	// 順序が崩れたら新しい TempTable にコピーしていく。
-	// ex. [2, 6, 20, 4, 1, 16, 19, 3, 18] => [2, 6, 10], [4], [1, 16, 19], [3, 18]
+	valsList := make([]map[string]*query.Constant, 0)
+
 	for {
-		next, err = sp.copy(src, currentScan)
+		next, vals, err := sp.copyDummyAndReturnVals(src, currentScan)
 		if err != nil {
 			return nil, fmt.Errorf("sp.copy: %w", err)
 		}
+		valsList = append(valsList, vals)
+
 		if !next {
 			break
 		}
 
-		cmp, err := sp.comp.Compare(src, currentScan)
+		atLastBlock, err := currentScan.AtLastBlock()
 		if err != nil {
-			return nil, fmt.Errorf("sp.comp.Compare: %w", err)
+			return nil, fmt.Errorf("currentScan.AtLastBlock: %w", err)
 		}
-		if cmp < 0 { // src < currentScan
-			currentScan.Close()
-			currentTemp = query.NewTempTable(sp.tx, sp.schema)
-			temps = append(temps, currentTemp)
-			currentScan, err = currentTemp.Open()
-			if err != nil {
-				return nil, err
-			}
+
+		if !atLastBlock {
+			continue
+		}
+
+		currentScan.Close()
+
+		sortedTemp, err := sp.sortIntoTemp(valsList)
+		if err != nil {
+			return nil, err
+		}
+		temps = append(temps, sortedTemp)
+
+		valsList = make([]map[string]*query.Constant, 0)
+		currentTemp = query.NewTempTable(sp.tx, sp.schema)
+		temps = append(temps, currentTemp)
+		currentScan, err = currentTemp.Open()
+		if err != nil {
+			return nil, err
 		}
 	}
 
 	currentScan.Close()
+	sortedTemp, err := sp.sortIntoTemp(valsList)
+	if err != nil {
+		return nil, err
+	}
+	temps = append(temps, sortedTemp)
 
-	sp.logger.Tracef("splitIntoRuns(): len(runs)=%v", len(temps))
 	return temps, nil
 }
 
-func (sp *SortPlan) doAMergeIteration(runs []*query.TempTable) ([]*query.TempTable, error) {
+func (sp *BetterSortPlan) sortIntoTemp(valsList []map[string]*query.Constant) (*query.TempTable, error) {
+	sp.sortInMemory(valsList)
+
+	sortedTemp := query.NewTempTable(sp.tx, sp.schema)
+	sortedScan, err := sortedTemp.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer sortedScan.Close()
+
+	err = sp.copyAllVals(valsList, sortedScan)
+	if err != nil {
+		return nil, err
+	}
+
+	return sortedTemp, nil
+}
+
+func (sp *BetterSortPlan) sortInMemory(valsList []map[string]*query.Constant) {
+	// TODO: メモリ（slice）に読み込んでからソートしているのは反則技。TempTable上でソートしないといけないと思われる
+	slices.SortStableFunc(valsList, func(a, b map[string]*query.Constant) int {
+		cmp, err := sp.comp.CompareMap(a, b)
+		if err != nil {
+			panic(err)
+		}
+		return cmp
+	})
+}
+
+func (sp *BetterSortPlan) doAMergeIteration(runs []*query.TempTable) ([]*query.TempTable, error) {
 	result := make([]*query.TempTable, 0)
 	for len(runs) > 1 {
 		p1 := runs[0]
@@ -145,7 +185,7 @@ func (sp *SortPlan) doAMergeIteration(runs []*query.TempTable) ([]*query.TempTab
 	return result, nil
 }
 
-func (sp *SortPlan) mergeTwoRuns(p1 *query.TempTable, p2 *query.TempTable) (*query.TempTable, error) {
+func (sp *BetterSortPlan) mergeTwoRuns(p1 *query.TempTable, p2 *query.TempTable) (*query.TempTable, error) {
 	src1, err := p1.Open()
 	if err != nil {
 		return nil, fmt.Errorf("p1.Open(): %w", err)
@@ -210,7 +250,7 @@ func (sp *SortPlan) mergeTwoRuns(p1 *query.TempTable, p2 *query.TempTable) (*que
 	return result, nil
 }
 
-func (sp *SortPlan) copy(src query.Scan, dest query.UpdateScan) (bool, error) {
+func (sp *BetterSortPlan) copy(src query.Scan, dest query.UpdateScan) (bool, error) {
 	err := dest.Insert()
 	if err != nil {
 		return false, err
@@ -233,4 +273,53 @@ func (sp *SortPlan) copy(src query.Scan, dest query.UpdateScan) (bool, error) {
 	}
 
 	return next, nil
+}
+
+func (sp *BetterSortPlan) copyDummyAndReturnVals(src query.Scan, dest query.UpdateScan) (bool, map[string]*query.Constant, error) {
+	err := dest.Insert()
+	if err != nil {
+		return false, nil, err
+	}
+
+	values := make(map[string]*query.Constant, len(sp.schema.Fields()))
+	for _, fieldName := range sp.schema.Fields() {
+		val, err := src.GetVal(fieldName)
+		if err != nil {
+			return false, nil, fmt.Errorf("src.GetVal(%s): %w", fieldName, err)
+		}
+
+		// AtLastBlock() を使うだけなのでSetVal()はしない
+
+		values[fieldName] = val
+	}
+
+	next, err := src.Next()
+	if err != nil {
+		return false, nil, err
+	}
+
+	return next, values, nil
+}
+
+func (sp *BetterSortPlan) copyAllVals(valsList []map[string]*query.Constant, dest query.UpdateScan) error {
+	err := dest.Insert()
+	if err != nil {
+		return err
+	}
+
+	for _, vals := range valsList {
+		for _, fieldName := range sp.schema.Fields() {
+			val, ok := vals[fieldName]
+			if !ok {
+				return fmt.Errorf("vals has no key %s", fieldName)
+			}
+
+			err = dest.SetVal(fieldName, val)
+			if err != nil {
+				return fmt.Errorf("dest.SetVal(%s, %v): %w", fieldName, val, err)
+			}
+		}
+	}
+
+	return nil
 }

@@ -35,7 +35,7 @@ func (t *Term) String() string {
 	return fmt.Sprintf("%s = %s", t.lhs, t.rhs)
 }
 
-func (t *Term) reductionFactor(p planLike) int {
+func (t *Term) reductionFactor(p planLike) int32 {
 	if t.lhs.IsFieldName() && t.rhs.IsFieldName() {
 		lhsName := t.lhs.AsFieldName()
 		rhsName := t.rhs.AsFieldName()
@@ -51,7 +51,7 @@ func (t *Term) reductionFactor(p planLike) int {
 		return 1
 	}
 
-	return math.MaxInt
+	return math.MaxInt32
 
 }
 

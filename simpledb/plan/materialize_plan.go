@@ -77,18 +77,22 @@ func (p *MaterializePlan) Open() (query.Scan, error) {
 	return dest, nil
 }
 
-func (p *MaterializePlan) BlocksAccessed() int {
+func (p *MaterializePlan) BlocksAccessed() int32 {
 	// create a dummy Layout object to calculate slot size
 	layout := record.NewLayoutFromSchema(p.srcPlan.Schema())
 	rpb := float64(p.tx.BlockSize()) / float64(layout.SlotSize())
-	return int(math.Ceil(float64(p.srcPlan.RecordsOutput()) / rpb))
+	blocksAccessed := int32(math.Ceil(float64(p.srcPlan.RecordsOutput()) / rpb))
+
+	p.logger.Tracef("BlocksAccessed(): rpb = blockSize(%d) / slotSize(%d) = %f", p.tx.BlockSize(), layout.SlotSize(), rpb)
+	p.logger.Tracef("BlocksAccessed() = ceil(recordsOutput(%d) / rpb(%f)) = %d", p.srcPlan.RecordsOutput(), rpb, blocksAccessed)
+	return blocksAccessed
 }
 
-func (p *MaterializePlan) RecordsOutput() int {
+func (p *MaterializePlan) RecordsOutput() int32 {
 	return p.srcPlan.RecordsOutput()
 }
 
-func (p *MaterializePlan) DistinctValues(fieldName string) int {
+func (p *MaterializePlan) DistinctValues(fieldName string) int32 {
 	return p.srcPlan.DistinctValues(fieldName)
 }
 

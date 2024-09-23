@@ -33,15 +33,15 @@ func (p *IndexSelectPlan) Open() (query.Scan, error) {
 	return query.NewIndexSelectScan(tableScan, idx, p.val), nil
 }
 
-func (p *IndexSelectPlan) BlocksAccessed() int {
+func (p *IndexSelectPlan) BlocksAccessed() int32 {
 	return p.indexInfo.BlocksAccessed() + p.RecordsOutput()
 }
 
-func (p *IndexSelectPlan) RecordsOutput() int {
+func (p *IndexSelectPlan) RecordsOutput() int32 {
 	return p.indexInfo.RecordsOutput()
 }
 
-func (p *IndexSelectPlan) DistinctValues(fieldName string) int {
+func (p *IndexSelectPlan) DistinctValues(fieldName string) int32 {
 	return p.indexInfo.DistinctValues(fieldName)
 }
 
