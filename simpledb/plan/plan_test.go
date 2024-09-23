@@ -88,22 +88,26 @@ func TestMultipleTablePlan(t *testing.T) {
 		t.Fatalf("failed to create tx: %v", err)
 	}
 
+	t.Log("NewTablePlan(student)")
 	p1, err := plan.NewTablePlan(tx, "student", simpleDB.MetadataManager())
 	if err != nil {
 		t.Fatalf("failed to create table plan: %v", err)
 	}
 
+	t.Log("NewTablePlan(dept)")
 	p2, err := plan.NewTablePlan(tx, "dept", simpleDB.MetadataManager())
 	if err != nil {
 		t.Fatalf("failed to create table plan: %v", err)
 	}
 
+	t.Log("NewProductPlan(p1, p2)")
 	p3, err := plan.NewProductPlan(p1, p2)
 
 	if err != nil {
 		t.Fatalf("failed to create product plan p3: %v", err)
 	}
 
+	t.Log("NewSelectPlan(p3, majorid = did)")
 	p4, err := plan.NewSelectPlan(p3, query.NewPredicateWithTerm(
 		query.NewTerm(
 			query.NewExpressionWithField("majorid"),
@@ -115,6 +119,7 @@ func TestMultipleTablePlan(t *testing.T) {
 		t.Fatalf("failed to create select plan p4: %v", err)
 	}
 
+	t.Log("print")
 	printStats(1, p1)
 	printStats(2, p2)
 	printStats(3, p3)

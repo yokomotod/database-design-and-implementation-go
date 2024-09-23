@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"simpledb/file"
+	"simpledb/util/logger"
 )
 
 type LogIterator struct {
@@ -63,6 +64,8 @@ func (it *LogIterator) Next() ([]byte, error) {
 }
 
 type Manager struct {
+	logger *logger.Logger
+
 	fileManager *file.Manager
 	logFile     string
 	logPage     *file.Page
@@ -74,6 +77,9 @@ type Manager struct {
 }
 
 func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
+	logger := logger.New("log.Manager", logger.Debug)
+	logger.Tracef("(%q) NewManager", logFile)
+
 	b := make([]byte, fileManager.BlockSize())
 	logPage := file.NewPageWith(b)
 
@@ -83,6 +89,8 @@ func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
 	}
 
 	lm := &Manager{
+		logger: logger,
+
 		fileManager: fileManager,
 		logFile:     logFile,
 		logPage:     logPage,
@@ -90,6 +98,7 @@ func NewManager(fileManager *file.Manager, logFile string) (*Manager, error) {
 	}
 
 	if logSize == 0 {
+		logger.Tracef("(%q) NewManager: logSize == 0, appendNewBlock", logFile)
 		lm.currentBlk, err = lm.appendNewBlock()
 		if err != nil {
 			return nil, fmt.Errorf("lm.appendNewBlock: %w", err)
@@ -123,6 +132,7 @@ func (lm *Manager) Flush(lsn int32) {
 		return
 	}
 
+	lm.logger.Tracef("(%q) Flush(): lsn(%d) <= lastSavedLSN(%d)", lm.logFile, lsn, lm.lastSavedLSN)
 	lm.flush()
 }
 
@@ -148,8 +158,11 @@ func (lm *Manager) Append(logRecord []byte) (int32, error) {
 	recordSize := int32(len(logRecord))
 	bytesNeeded := recordSize + file.Int32Bytes
 
+	lm.logger.Tracef("(%q) Append(): check boundary(%d) - bytesNeeded(%d) < Int32Bytes(%d)", lm.logFile, boundary, bytesNeeded, file.Int32Bytes)
 	if boundary-bytesNeeded < file.Int32Bytes { // It doesn't fit
+		lm.logger.Tracef("(%q) Append(): flush()", lm.logFile)
 		lm.flush() // so move to the next block.
+		lm.logger.Tracef("(%q) Append(): appendNewBlock()", lm.logFile)
 		currentBlk, err := lm.appendNewBlock()
 		if err != nil {
 			return 0, fmt.Errorf("lm.appendNewBlock: %w", err)

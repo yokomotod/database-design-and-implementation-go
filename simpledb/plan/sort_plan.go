@@ -5,11 +5,14 @@ import (
 	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
+	"simpledb/util/logger"
 )
 
 var _ Plan = (*SortPlan)(nil)
 
 type SortPlan struct {
+	logger *logger.Logger
+
 	plan   Plan
 	tx     *tx.Transaction
 	schema *record.Schema
@@ -18,6 +21,8 @@ type SortPlan struct {
 
 func NewSortPlan(tx *tx.Transaction, plan Plan, sortFields []string) (*SortPlan, error) {
 	return &SortPlan{
+		logger: logger.New("plan.SortPlan", logger.Trace),
+
 		plan:   plan,
 		tx:     tx,
 		schema: plan.Schema(),
@@ -116,6 +121,8 @@ func (sp *SortPlan) splitIntoRuns(src query.Scan) ([]*query.TempTable, error) {
 	}
 
 	currentScan.Close()
+
+	sp.logger.Tracef("splitIntoRuns(): len(runs)=%v", len(temps))
 	return temps, nil
 }
 

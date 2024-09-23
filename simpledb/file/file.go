@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"simpledb/util/logger"
 	"strings"
 	"sync"
 	"unicode/utf16"
@@ -96,6 +97,8 @@ func MaxLength(length int32) int32 {
 }
 
 type Manager struct {
+	logger *logger.Logger
+
 	dbDir     string
 	blockSize int32
 	isNew     bool
@@ -135,6 +138,8 @@ func NewManager(dbDir string, blockSize int32) (*Manager, error) {
 	}
 
 	return &Manager{
+		logger: logger.New("file.Manager", logger.Trace),
+
 		dbDir:     dbDir,
 		blockSize: blockSize,
 		isNew:     isNew,
@@ -154,6 +159,8 @@ func (fm *Manager) BlockSize() int32 {
 func (fm *Manager) Read(blk BlockID, p *Page) error {
 	fm.mux.Lock()
 	defer fm.mux.Unlock()
+
+	fm.logger.Tracef("(%q) Read(%+v)", blk.FileName, blk)
 
 	f, err := fm.openFile(blk.FileName)
 	if err != nil {
@@ -177,6 +184,8 @@ func (fm *Manager) Write(blk BlockID, p *Page) error {
 	fm.mux.Lock()
 	defer fm.mux.Unlock()
 
+	fm.logger.Tracef("(%q) Write(%+v)", blk.FileName, blk)
+
 	f, err := fm.openFile(blk.FileName)
 	if err != nil {
 		return fmt.Errorf("fm.openFile: %w", err)
@@ -198,6 +207,8 @@ func (fm *Manager) Write(blk BlockID, p *Page) error {
 func (fm *Manager) Append(filename string) (BlockID, error) {
 	fm.mux.Lock()
 	defer fm.mux.Unlock()
+
+	fm.logger.Tracef("(%q) Append", filename)
 
 	newBlockNum, err := fm.Length(filename)
 	if err != nil {
@@ -225,6 +236,7 @@ func (fm *Manager) Append(filename string) (BlockID, error) {
 }
 
 func (fm *Manager) Length(filename string) (int32, error) {
+	fm.logger.Tracef("(%q) Length(%q)", filename, path.Join(fm.dbDir, filename))
 	f, err := fm.openFile(filename)
 	if err != nil {
 		return 0, fmt.Errorf("fm.openFile: %w", err)
@@ -244,6 +256,7 @@ func (fm *Manager) openFile(filename string) (*os.File, error) {
 		return f, nil
 	}
 
+	fm.logger.Tracef("(%q) os.openFile", filename)
 	f, err := os.OpenFile(path.Join(fm.dbDir, filename), os.O_RDWR|os.O_CREATE, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("os.OpenFile: %w", err)

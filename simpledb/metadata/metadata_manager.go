@@ -3,6 +3,7 @@ package metadata
 import (
 	"simpledb/record"
 	"simpledb/tx"
+	"simpledb/util/logger"
 )
 
 type Manager struct {
@@ -13,18 +14,27 @@ type Manager struct {
 }
 
 func NewManager(isNew bool, tx *tx.Transaction) (*Manager, error) {
+	logger := logger.New("metadata.Manager", logger.Trace)
+
+	logger.Tracef("NewTableManager(isNew=%t)", isNew)
 	tableManager, err := NewTableManager(isNew, tx)
 	if err != nil {
 		return nil, err
 	}
+
+	logger.Tracef("NewViewManager(isNew=%t)", isNew)
 	viewManager, err := NewViewManager(isNew, tableManager, tx)
 	if err != nil {
 		return nil, err
 	}
+
+	logger.Tracef("NewStatManager()")
 	statManager, err := NewStatManager(tableManager, tx)
 	if err != nil {
 		return nil, err
 	}
+
+	logger.Tracef("NewIndexManager()")
 	indexManager, err := NewIndexManager(isNew, tableManager, statManager, tx)
 	if err != nil {
 		return nil, err

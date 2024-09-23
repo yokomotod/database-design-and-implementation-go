@@ -4,6 +4,7 @@ import (
 	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
+	"simpledb/util/logger"
 )
 
 const MaxName = 16
@@ -18,11 +19,15 @@ const fieldCatalogFieldLength = "length"
 const fieldCatalogFieldOffset = "offset"
 
 type TableManager struct {
+	logger *logger.Logger
+
 	tableCatalogLayout *record.Layout
 	fieldCatalogLayout *record.Layout
 }
 
 func NewTableManager(isNew bool, tx *tx.Transaction) (*TableManager, error) {
+	logger := logger.New("metadata.TableManager", logger.Trace)
+
 	tableCatalogSchema := record.NewSchema()
 	tableCatalogSchema.AddStringField(tableCatalogFieldTableName, MaxName)
 	tableCatalogSchema.AddIntField(tableCatalogFieldSlotSize)
@@ -36,11 +41,13 @@ func NewTableManager(isNew bool, tx *tx.Transaction) (*TableManager, error) {
 	fieldCatalogSchema.AddIntField(fieldCatalogFieldOffset)
 	fieldCatalogLayout := record.NewLayoutFromSchema(fieldCatalogSchema)
 
-	tableManager := &TableManager{tableCatalogLayout, fieldCatalogLayout}
+	tableManager := &TableManager{logger, tableCatalogLayout, fieldCatalogLayout}
 	if isNew {
+		logger.Tracef("(%q) NewTableManager(): CreateTable", tableCatalogTableName)
 		if err := tableManager.CreateTable(tableCatalogTableName, tableCatalogSchema, tx); err != nil {
 			return nil, err
 		}
+		logger.Tracef("(%q) NewTableManager(): CreateTable", fieldCatalogTableName)
 		if err := tableManager.CreateTable(fieldCatalogTableName, fieldCatalogSchema, tx); err != nil {
 			return nil, err
 		}
@@ -49,6 +56,8 @@ func NewTableManager(isNew bool, tx *tx.Transaction) (*TableManager, error) {
 }
 
 func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx *tx.Transaction) error {
+	tm.logger.Tracef("(%q) CreateTable", tableName)
+
 	layout := record.NewLayoutFromSchema(schema)
 	tableCatalog, err := query.NewTableScan(tx, tableCatalogTableName, tm.tableCatalogLayout)
 	if err != nil {
@@ -56,6 +65,7 @@ func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx 
 	}
 	defer tableCatalog.Close()
 
+	tm.logger.Tracef("(%q) CreateTable(): tableCatalog.Insert", tableName)
 	if err := tableCatalog.Insert(); err != nil {
 		return err
 	}
@@ -73,6 +83,7 @@ func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx 
 	defer fieldCatalog.Close()
 
 	for _, fieldName := range schema.Fields() {
+		tm.logger.Tracef("(%q) CreateTable(): fieldCatalog.Insert(): `%s.%s`", tableName, tableName, fieldName)
 		if err := fieldCatalog.Insert(); err != nil {
 			return err
 		}
@@ -96,6 +107,11 @@ func (tm *TableManager) CreateTable(tableName string, schema *record.Schema, tx 
 }
 
 func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record.Layout, error) {
+	tm.logger.Tracef("(%q) GetLayout", tableName)
+	defer func() {
+		tm.logger.Tracef("(%q) GetLayout: done", tableName)
+	}()
+
 	var size int32 = -1
 	tableCatalog, err := query.NewTableScan(tx, tableCatalogTableName, tm.tableCatalogLayout)
 	if err != nil {
@@ -115,11 +131,13 @@ func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record
 		if err != nil {
 			return nil, err
 		}
+		tm.logger.Tracef("(%q) GetLayout: tableCatalog.Next(): `%s`", tableName, t)
 		if t == tableName {
 			size, err = tableCatalog.GetInt(tableCatalogFieldSlotSize)
 			if err != nil {
 				return nil, err
 			}
+			tm.logger.Tracef("(%q) GetLayout: tableCatalog.Next(): size=%d", tableName, size)
 			break
 		}
 	}
@@ -144,6 +162,7 @@ func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record
 		if err != nil {
 			return nil, err
 		}
+		tm.logger.Tracef("(%q) GetLayout: fieldCatalog.Next(): `%s`", tableName, t)
 		if t == tableName {
 			fldname, err := fieldCatalog.GetString(fieldCatalogFieldFieldName)
 			if err != nil {
@@ -161,6 +180,7 @@ func (tm *TableManager) GetLayout(tableName string, tx *tx.Transaction) (*record
 			if err != nil {
 				return nil, err
 			}
+			tm.logger.Tracef("(%q) GetLayout: fieldCatalog.Next(): fldname=%q, fldtype=%d, fldlen=%d, offset=%d", tableName, fldname, fldtype, fldlen, offset)
 			offsets[fldname] = offset
 			schema.AddField(fldname, record.FieldType(fldtype), fldlen)
 		}

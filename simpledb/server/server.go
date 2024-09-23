@@ -9,6 +9,7 @@ import (
 	"simpledb/metadata"
 	"simpledb/plan"
 	"simpledb/tx"
+	"simpledb/util/logger"
 )
 
 const BlockSize = 400
@@ -51,6 +52,8 @@ func NewIndexedSimpleDB(dirname string) (*SimpleDB, error) {
 }
 
 func newSimpleDBWithMetadata(dirname string, useBasic bool, bufferSize int32) (*SimpleDB, error) {
+	logger := logger.New("server.SimpleDB", logger.Trace)
+
 	db, err := NewSimpleDB(dirname, BlockSize, bufferSize)
 	if err != nil {
 		return nil, fmt.Errorf("SimpleDB: %w", err)
@@ -61,9 +64,9 @@ func newSimpleDBWithMetadata(dirname string, useBasic bool, bufferSize int32) (*
 	}
 	isNew := db.fileManager.IsNew()
 	if isNew {
-		fmt.Println("creating new database")
+		logger.Infof("creating new database")
 	} else {
-		fmt.Println("recovering existing database")
+		logger.Infof("recovering existing database")
 		if err := tx.Recover(); err != nil {
 			return nil, fmt.Errorf("tx.Recover: %w", err)
 		}

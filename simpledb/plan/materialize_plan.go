@@ -6,23 +6,30 @@ import (
 	"simpledb/query"
 	"simpledb/record"
 	"simpledb/tx"
+	"simpledb/util/logger"
 )
 
 var _ Plan = (*MaterializePlan)(nil)
 
 type MaterializePlan struct {
+	logger *logger.Logger
+
 	srcPlan Plan
 	tx      *tx.Transaction
 }
 
 func NewMaterializePlan(tx *tx.Transaction, srcPlan Plan) *MaterializePlan {
 	return &MaterializePlan{
+		logger: logger.New("plan.MaterializePlan", logger.Trace),
+
 		srcPlan: srcPlan,
 		tx:      tx,
 	}
 }
 
 func (p *MaterializePlan) Open() (query.Scan, error) {
+	p.logger.Tracef("Open()")
+
 	sch := p.srcPlan.Schema()
 	temp := query.NewTempTable(p.tx, sch)
 	src, err := p.srcPlan.Open()
@@ -37,6 +44,7 @@ func (p *MaterializePlan) Open() (query.Scan, error) {
 	}
 
 	for {
+		p.logger.Tracef("MaterializePlan.Open(): src.Next()")
 		next, err := src.Next()
 		if err != nil {
 			return nil, fmt.Errorf("src.Next(): %w", err)
@@ -65,6 +73,7 @@ func (p *MaterializePlan) Open() (query.Scan, error) {
 		return nil, fmt.Errorf("dest.BeforeFirst(): %w", err)
 	}
 
+	p.logger.Tracef("Open(): done")
 	return dest, nil
 }
 

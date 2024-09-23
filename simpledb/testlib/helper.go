@@ -9,6 +9,8 @@ import (
 func InsertTestData(t *testing.T, simpledb *server.SimpleDB) error {
 	t.Helper()
 
+	t.Log("Start InsertTestData")
+
 	tx, err := simpledb.NewTx()
 	if err != nil {
 		return err
@@ -90,6 +92,8 @@ func InsertTestData(t *testing.T, simpledb *server.SimpleDB) error {
 	if err != nil {
 		return err
 	}
+
+	t.Log("End InsertTestData")
 
 	return nil
 }
