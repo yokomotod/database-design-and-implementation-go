@@ -271,11 +271,6 @@ func (sp *MultibufferSortPlan) mergeSeveralRuns(runs []*query.TempTable) (*query
 
 		if hasMore {
 			sp.logger.Tracef("mergeSeveralRuns(): srcs[%d]: hasMore=true", i)
-			eid, err := srcs[i].GetInt("eid")
-			if err != nil {
-				return nil, fmt.Errorf("srcs[%d].GetInt(eid): %w", i, err)
-			}
-			sp.logger.Tracef("mergeSeveralRuns(): srcs[%d]: eid=%d", i, eid)
 			hasMores[srcs[i]] = struct{}{}
 		}
 	}
