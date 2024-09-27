@@ -61,7 +61,7 @@ func (s *MultibufferSortScan) BeforeFirst() error {
 }
 
 func (s *MultibufferSortScan) Next() (bool, error) {
-	valsMap := make(map[int]map[string]*Constant)
+	scanMap := make(map[int]Scan)
 	for i, scan := range s.scans {
 		if s.currentScan == scan {
 			hasMore, err := scan.Next()
@@ -78,34 +78,25 @@ func (s *MultibufferSortScan) Next() (bool, error) {
 			break
 		}
 
-		vals := make(map[string]*Constant)
-		for _, field := range s.comp.Fields {
-			val, err := scan.GetVal(field)
-			if err != nil {
-				return false, fmt.Errorf("scans[%d].GetVal: %w", i, err)
-			}
-			vals[field] = val
-		}
-
-		valsMap[i] = vals
+		scanMap[i] = scan
 	}
 
-	s.logger.Tracef("Next(): valsMap=%+v", valsMap)
-	if len(valsMap) == 0 {
+	s.logger.Tracef("Next(): scanMap=%+v", scanMap)
+	if len(scanMap) == 0 {
 		return false, nil
 	}
 
 	minIdx := 0
-	for i, vals := range valsMap {
+	for i, scan := range scanMap {
 		if i == 0 {
 			continue
 		}
 
-		cmp, err := s.comp.CompareMap(vals, valsMap[minIdx])
+		cmp, err := s.comp.Compare(scan, scanMap[minIdx])
 		if err != nil {
-			return false, fmt.Errorf("s.comp.CompareMap: %w", err)
+			return false, fmt.Errorf("s.comp.Compare: %w", err)
 		}
-		s.logger.Tracef("Next(): CompareMap(%+v, %+v) = %d", vals, valsMap[minIdx], cmp)
+		s.logger.Tracef("Next(): Compare(%+v, %+v) = %d", scan, scanMap[minIdx], cmp)
 		if cmp < 0 {
 			minIdx = i
 		}
