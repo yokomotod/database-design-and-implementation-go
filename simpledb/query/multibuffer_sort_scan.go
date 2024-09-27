@@ -86,9 +86,11 @@ func (s *MultibufferSortScan) Next() (bool, error) {
 		return false, nil
 	}
 
-	minIdx := 0
+	minIdx := -1
 	for i, scan := range scanMap {
-		if i == 0 {
+		if minIdx == -1 {
+			// first loop
+			minIdx = i
 			continue
 		}
 
