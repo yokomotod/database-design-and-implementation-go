@@ -94,6 +94,7 @@ func (hjp *HashJoinPlan) recursiveSplitIntoBucket(p1, p2 *query.TempTable, numBu
 	hjp.logger.Tracef("recursiveSplitIntoBucket(): p2.TotalBlkNum=%d, numBuffs=%d, mod=%d", p2.TotalBlkNum, numBuffs, mod)
 
 	if p2.TotalBlkNum <= numBuffs {
+		// fits in buffers
 		return []*query.TempTable{p1}, []*query.TempTable{p2}, nil
 	}
 
@@ -106,6 +107,11 @@ func (hjp *HashJoinPlan) recursiveSplitIntoBucket(p1, p2 *query.TempTable, numBu
 	buckets2, err := hjp.splitIntoBucket(p2, numBuffs, mod, hjp.fldName2)
 	if err != nil {
 		return nil, nil, fmt.Errorf("splitIntoBucket2: %w", err)
+	}
+
+	if len(buckets2) == 1 {
+		// not fit in buffers, but cannot be split anymore
+		return buckets1, buckets2, nil
 	}
 
 	subBuckets1 := make([]*query.TempTable, 0)
