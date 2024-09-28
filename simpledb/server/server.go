@@ -49,7 +49,7 @@ func NewSimpleDBWithMetadata(dirname string) (*SimpleDB, error) {
 }
 
 func NewOptimizedSimpleDB(dirname string) (*SimpleDB, error) {
-	return newSimpleDBWithMetadata(dirname, false, BufferSize)
+	return newSimpleDBWithMetadata(dirname, false, 10000)
 }
 
 func newSimpleDBWithMetadata(dirname string, useBasic bool, bufferSize int32) (*SimpleDB, error) {

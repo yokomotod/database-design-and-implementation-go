@@ -2,7 +2,9 @@ package plan_test
 
 import (
 	"path"
+	"simpledb/plan"
 	"simpledb/server"
+	"simpledb/testlib"
 	"testing"
 )
 
@@ -141,4 +143,157 @@ func TestPlannerStudent(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTree(t *testing.T) {
+	cases := []struct {
+		name     string
+		useBasic bool
+		want     plan.PlanNode
+	}{
+		{
+			"Basic",
+			true,
+			plan.PlanNode{
+				Name:          "Project([grade])",
+				RecordsOutput: 0,
+				Children: []*plan.PlanNode{
+					{
+						Name:          "Select(sid = studentid and sectid = sectionid and sname = 'joe' and yearoffered = 2020)",
+						RecordsOutput: 0,
+						Children: []*plan.PlanNode{
+							{
+								Name:          "Product",
+								RecordsOutput: 168750000,
+								Children: []*plan.PlanNode{
+									{
+										Name:          "Product",
+										RecordsOutput: 112500,
+										Children: []*plan.PlanNode{
+											{
+												Name:          "Table(student)",
+												RecordsOutput: 450,
+											},
+											{
+												Name:          "Table(section)",
+												RecordsOutput: 250,
+											},
+										},
+									},
+									{
+										Name:          "Table(enroll)",
+										RecordsOutput: 1500,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{"Optimized", false, plan.PlanNode{
+			Name:          "Project([grade])",
+			RecordsOutput: 0,
+			Children: []*plan.PlanNode{
+				{
+					Name:          "Select(sectid = sectionid)",
+					RecordsOutput: 0,
+					Children: []*plan.PlanNode{
+						{
+							Name:          "MultibufferProduct",
+							RecordsOutput: 8,
+							Children: []*plan.PlanNode{
+								{
+									Name:          "Materialize",
+									RecordsOutput: 4,
+									Children: []*plan.PlanNode{
+										{
+											Name:          "IndexJoin",
+											RecordsOutput: 4,
+											Children: []*plan.PlanNode{
+												{
+													Name:          "Select(sname = 'joe')",
+													RecordsOutput: 2,
+													Children: []*plan.PlanNode{
+														{
+															Name:          "Table(student)",
+															RecordsOutput: 450,
+														},
+													},
+												},
+												{
+													Name:          "Table(enroll)",
+													RecordsOutput: 1500,
+												},
+											},
+										},
+									},
+								},
+								{
+									Name:          "Select(yearoffered = 2020)",
+									RecordsOutput: 2,
+									Children: []*plan.PlanNode{
+										{
+											Name:          "Table(section)",
+											RecordsOutput: 250,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var simpleDB *server.SimpleDB
+			var err error
+			if c.useBasic {
+				simpleDB, err = server.NewSimpleDBWithMetadata(path.Join(t.TempDir(), "studentdb"))
+			} else {
+				simpleDB, err = server.NewOptimizedSimpleDB(path.Join(t.TempDir(), "studentdb"))
+			}
+			if err != nil {
+				t.Fatalf("failed to create simpledb: %v", err)
+			}
+
+			err = testlib.InsertLargeTestData(t, simpleDB)
+			if err != nil {
+				t.Fatalf("failed to setup test data: %v", err)
+			}
+
+			tx, err := simpleDB.NewTx()
+			if err != nil {
+				t.Fatalf("failed to create tx: %v", err)
+			}
+
+			planner := simpleDB.Planner()
+
+			plan, err := planner.CreateQueryPlan(
+				`
+				select Grade from STUDENT, SECTION, ENROLL
+				where SId=StudentId and SectId=SectionId and SName='joe' and YearOffered=2020
+				`,
+				tx,
+			)
+			if err != nil {
+				t.Fatalf("failed to create query plan: %v", err)
+			}
+
+			want := c.want.String()
+			got := plan.Tree().String()
+			if got != string(want) {
+				t.Errorf("got unexpected tree: %s\nwant: %s", got, want)
+			}
+
+			err = tx.Commit()
+			if err != nil {
+				t.Fatalf("failed to commit: %v", err)
+			}
+		})
+	}
+
 }
