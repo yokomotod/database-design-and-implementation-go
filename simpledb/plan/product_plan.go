@@ -51,3 +51,7 @@ func (p *ProductPlan) DistinctValues(fieldName string) int32 {
 func (p *ProductPlan) Schema() *record.Schema {
 	return p.schema
 }
+
+func (p *ProductPlan) Tree() *PlanNode {
+	return NewPlanNode("Product", p, []*PlanNode{p.p1.Tree(), p.p2.Tree()})
+}

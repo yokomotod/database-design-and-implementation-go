@@ -39,7 +39,7 @@ type StatManager struct {
 }
 
 func NewStatManager(tableManager *TableManager, tx *tx.Transaction) (*StatManager, error) {
-	logger := logger.New("metadata.StatManager", logger.Trace)
+	logger := logger.New("metadata.StatManager", logger.Info)
 
 	statManager := &StatManager{logger, tableManager, nil, 0, &sync.Mutex{}}
 	err := statManager.refreshStatistics(tx)
@@ -75,6 +75,10 @@ func (sm *StatManager) GetStatInfo(tableName string, layout *record.Layout, tx *
 		sm.tableStats[tableName] = si
 	}
 	return sm.tableStats[tableName], nil
+}
+
+func (sm *StatManager) ForceRefreshStatistics(tx *tx.Transaction) error {
+	return sm.refreshStatistics(tx)
 }
 
 func (sm *StatManager) refreshStatistics(tx *tx.Transaction) error {

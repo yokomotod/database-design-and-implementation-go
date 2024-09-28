@@ -7,6 +7,8 @@ import (
 	"simpledb/record"
 )
 
+var _ Plan = (*IndexSelectPlan)(nil)
+
 type IndexSelectPlan struct {
 	plan      Plan
 	indexInfo *metadata.IndexInfo
@@ -47,4 +49,8 @@ func (p *IndexSelectPlan) DistinctValues(fieldName string) int32 {
 
 func (p *IndexSelectPlan) Schema() *record.Schema {
 	return p.plan.Schema()
+}
+
+func (p *IndexSelectPlan) Tree() *PlanNode {
+	return NewPlanNode("IndexSelect", p, []*PlanNode{p.plan.Tree()})
 }

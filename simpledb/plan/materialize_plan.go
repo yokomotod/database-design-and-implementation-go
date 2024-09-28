@@ -99,3 +99,7 @@ func (p *MaterializePlan) DistinctValues(fieldName string) int32 {
 func (p *MaterializePlan) Schema() *record.Schema {
 	return p.srcPlan.Schema()
 }
+
+func (p *MaterializePlan) Tree() *PlanNode {
+	return NewPlanNode("Materialize", p, []*PlanNode{p.srcPlan.Tree()})
+}

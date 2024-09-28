@@ -82,3 +82,7 @@ func (mjp *MergeJoinPlan) DistinctValues(fieldName string) int32 {
 func (mjp *MergeJoinPlan) Schema() *record.Schema {
 	return mjp.sch
 }
+
+func (mjp *MergeJoinPlan) Tree() *PlanNode {
+	return NewPlanNode("MergeJoin", mjp, []*PlanNode{mjp.p1.Tree(), mjp.p2.Tree()})
+}

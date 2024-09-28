@@ -2,6 +2,7 @@ package query
 
 import (
 	"math"
+	"simpledb/record"
 	"strings"
 )
 
@@ -61,6 +62,47 @@ func (p *Predicate) ReductionFactor(plan planLike) int32 {
 		reductionFactor *= rf
 	}
 	return reductionFactor
+}
+
+// Return the subpredicate that applies to the specified schema
+func (p *Predicate) SelectSubPred(schema *record.Schema) *Predicate {
+	result := NewPredicate()
+	for _, term := range p.terms {
+		if !term.AppliesTo(schema) {
+			continue
+		}
+
+		result.terms = append(result.terms, term)
+	}
+
+	if len(result.terms) == 0 {
+		return nil
+	}
+
+	return result
+}
+
+// Return the subpredicate consisting of terms that apply
+// to the union of the two specified schemas,
+// but not to either schema separately
+func (p *Predicate) JoinSubPred(sch1, sch2 *record.Schema) *Predicate {
+	result := NewPredicate()
+	newSch := record.NewSchema()
+	newSch.AddAll(sch1)
+	newSch.AddAll(sch2)
+
+	for _, term := range p.terms {
+		if term.AppliesTo(sch1) || term.AppliesTo(sch2) || !term.AppliesTo(newSch) {
+			continue
+		}
+		result.terms = append(result.terms, term)
+	}
+
+	if len(result.terms) == 0 {
+		return nil
+	}
+
+	return result
 }
 
 func (p *Predicate) EquatesWithConstant(fieldName string) *Constant {

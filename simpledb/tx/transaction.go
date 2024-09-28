@@ -35,7 +35,7 @@ type Transaction struct {
 
 func New(fileMgr *file.Manager, logMgr *log.Manager, bufferManager *buffer.Manager) (*Transaction, error) {
 	tx := &Transaction{
-		logger: logger.New("tx.Transaction", logger.Trace),
+		logger: logger.New("tx.Transaction", logger.Info),
 
 		concurMgr: concurrency.New(),
 		fm:        fileMgr,

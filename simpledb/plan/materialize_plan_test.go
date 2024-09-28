@@ -52,12 +52,12 @@ func TestMaterializePlanBlocksAccessed(t *testing.T) {
 	t.Logf("RecordsOutput: %d", p2.RecordsOutput())
 	t.Logf("BlocksAccessed: %d", p2.BlocksAccessed())
 	assert.Equal(t, int32(100), p2.RecordsOutput())
-	assert.Equal(t, int32(4), p2.BlocksAccessed())
+	assert.Equal(t, int32(7), p2.BlocksAccessed())
 
 	t.Logf("RecordsOutput: %d", m2.RecordsOutput())
 	t.Logf("BlocksAccessed: %d", m2.BlocksAccessed())
 	assert.Equal(t, int32(100), m2.RecordsOutput())
-	assert.Equal(t, int32(3), m2.BlocksAccessed()) // why not 4 blocks?
+	assert.Equal(t, int32(6), m2.BlocksAccessed()) // why not 4 blocks?
 
 	err = tx.Commit()
 	if err != nil {
@@ -70,7 +70,7 @@ func TestMaterializePlan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	err = testlib.InsertTestData(t, simpleDB)
+	err = testlib.InsertSmallTestData(t, simpleDB)
 	if err != nil {
 		t.Fatalf("failed to setup test data: %v", err)
 	}

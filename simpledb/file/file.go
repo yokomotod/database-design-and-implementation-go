@@ -138,7 +138,7 @@ func NewManager(dbDir string, blockSize int32) (*Manager, error) {
 	}
 
 	return &Manager{
-		logger: logger.New("file.Manager", logger.Trace),
+		logger: logger.New("file.Manager", logger.Info),
 
 		dbDir:     dbDir,
 		blockSize: blockSize,

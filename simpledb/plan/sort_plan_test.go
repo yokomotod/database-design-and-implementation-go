@@ -13,7 +13,7 @@ func TestSortPlan(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create simpledb: %v", err)
 	}
-	err = testlib.InsertTestData(t, simpleDB)
+	err = testlib.InsertSmallTestData(t, simpleDB)
 	if err != nil {
 		t.Fatalf("failed to setup test data: %v", err)
 	}

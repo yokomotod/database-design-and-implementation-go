@@ -26,7 +26,7 @@ type TableManager struct {
 }
 
 func NewTableManager(isNew bool, tx *tx.Transaction) (*TableManager, error) {
-	logger := logger.New("metadata.TableManager", logger.Trace)
+	logger := logger.New("metadata.TableManager", logger.Info)
 
 	tableCatalogSchema := record.NewSchema()
 	tableCatalogSchema.AddStringField(tableCatalogFieldTableName, MaxName)

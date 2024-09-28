@@ -22,7 +22,7 @@ type Buffer struct {
 
 func NewBuffer(fm *file.Manager, debugName string) *Buffer {
 	return &Buffer{
-		logger:    logger.New("buffer.Buffer", logger.Trace),
+		logger:    logger.New("buffer.Buffer", logger.Info),
 		debugName: debugName,
 
 		fileManager: fm,
@@ -104,7 +104,7 @@ type Manager struct {
 }
 
 func NewManager(fm *file.Manager, buffSize int32) *Manager {
-	logger := logger.New("buffer.Manager", logger.Trace)
+	logger := logger.New("buffer.Manager", logger.Info)
 
 	logger.Tracef("NewManager(): bufferPool=%d", buffSize)
 	bufferPool := make([]*Buffer, buffSize)

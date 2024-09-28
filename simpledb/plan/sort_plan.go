@@ -71,6 +71,10 @@ func (sp *SortPlan) Schema() *record.Schema {
 	return sp.schema
 }
 
+func (sp *SortPlan) Tree() *PlanNode {
+	return NewPlanNode("Sort", sp, []*PlanNode{sp.plan.Tree()})
+}
+
 func (sp *SortPlan) splitIntoRuns(src query.Scan) ([]*query.TempTable, error) {
 	temps := make([]*query.TempTable, 0)
 	err := src.BeforeFirst()

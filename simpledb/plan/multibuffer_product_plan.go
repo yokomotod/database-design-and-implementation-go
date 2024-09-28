@@ -85,6 +85,9 @@ func (p *MultibufferProductPlan) Schema() *record.Schema {
 	return p.schema
 }
 
+func (p *MultibufferProductPlan) Tree() *PlanNode {
+	return NewPlanNode("MultibufferProduct", p, []*PlanNode{p.lhs.Tree(), p.rhs.Tree()})
+}
 func (p *MultibufferProductPlan) copyRecordsFrom(plan Plan) (*query.TempTable, error) {
 	src, err := plan.Open()
 	if err != nil {

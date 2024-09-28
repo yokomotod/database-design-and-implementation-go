@@ -50,9 +50,9 @@ func TestNewMultibufferProductPlan(t *testing.T) {
 
 		want := stats{
 			PlanRecordsOutput:    1000, // 10 students * 100 depts = 1000
-			PlanBlocksAccessed:   4,
+			PlanBlocksAccessed:   7,
 			ActualRecordsOutput:  1000,
-			ActualBlocksAccessed: 18,
+			ActualBlocksAccessed: 30,
 		}
 
 		assert.Equal(t, want, got)
@@ -84,9 +84,9 @@ func TestNewMultibufferProductPlan(t *testing.T) {
 
 		want := stats{
 			PlanRecordsOutput:    1000, // 10 students * 100 depts = 1000
-			PlanBlocksAccessed:   41,
+			PlanBlocksAccessed:   71,
 			ActualRecordsOutput:  1000,
-			ActualBlocksAccessed: 42,
+			ActualBlocksAccessed: 72,
 		}
 
 		assert.Equal(t, want, got)
