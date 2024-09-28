@@ -200,7 +200,7 @@ func (tx *Transaction) BlocksAccessed() int {
 	return tx.blocksAccessed
 }
 
-func (tx *Transaction) ResetblocksAccessed() {
+func (tx *Transaction) ResetBlocksAccessed() {
 	tx.blocksAccessed = 0
 }
 

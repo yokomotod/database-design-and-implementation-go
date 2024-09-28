@@ -153,6 +153,15 @@ func (ts *TableScan) SetVal(fieldName string, val *Constant) error {
 	return nil
 }
 
+func (ts *TableScan) CanInsertCurrentBlock() (bool, error) {
+	newSlot, err := ts.rp.SearchAfter(ts.currentSlot, record.Empty)
+	if err != nil {
+		return false, err
+	}
+
+	return newSlot >= 0, nil
+}
+
 func (ts *TableScan) Insert() error {
 	nextSlot, err := ts.rp.InsertAfter(ts.currentSlot)
 	if err != nil {
@@ -234,6 +243,7 @@ func (ts *TableScan) moveToNewBlock() error {
 		return err
 	}
 	ts.currentSlot = -1
+	ts.TotalBlkNum++
 	return nil
 }
 
